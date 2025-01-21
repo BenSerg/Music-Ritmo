@@ -77,6 +77,10 @@ def get_users(session: Session = Depends(db.get_session)):
 def get_tracks(session: Session = Depends(db.get_session)):
     return session.exec(select(db.Track)).all()
 
+@router.get("/artists/")
+def get_artists(session: Session = Depends(db.get_session)):
+    return session.exec(select(db.Artist)).all()
+
 @router.get("/albums/")
 def get_albums(session: Session = Depends(db.get_session)):
     return session.exec(select(db.Album)).all()
