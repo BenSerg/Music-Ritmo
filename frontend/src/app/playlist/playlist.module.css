@@ -1,0 +1,9 @@
+.playlist_button {
+  position: fixed;
+  bottom: 20px;
+  right: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}

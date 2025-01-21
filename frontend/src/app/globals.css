@@ -27,3 +27,7 @@ p {
   font-size: 20px;
   color: #405a01;
 }
+
+a {
+  text-decoration: none;
+}

@@ -26,6 +26,7 @@ export const Playlist = ({ name, link }: PlaylistProps) => {
       className={styles.playlist}
       style={{ backgroundColor: randomColor }}
     >
+      <i className={`fa-regular fa-trash-can ${styles.deleteIcon}`}></i>
       <div className={styles.playlist__name}>{name}</div>
     </a>
   );

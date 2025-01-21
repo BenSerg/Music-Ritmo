@@ -1,4 +1,5 @@
 .playlist {
+  position: relative; /* Для того чтобы иконка была расположена относительно этого элемента */
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -10,12 +11,25 @@
 }
 
 .playlist__name {
-  font-size: 20px;
+  font-size: 16px;
   color: #ffffff;
   margin-top: auto;
   padding: 10px 0;
   font-family: "SteticaLight";
-  font-size: 16px;
   background-color: rgba(255, 255, 255, 0.5);
   border-radius: 0 0 40px 40px;
+}
+
+.deleteIcon {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 20px;
+  color: white;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.playlist:hover .deleteIcon {
+  opacity: 1;
 }
