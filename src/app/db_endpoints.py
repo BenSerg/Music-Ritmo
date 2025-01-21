@@ -78,17 +78,17 @@ def get_tracks(session: Session = Depends(db.get_session)):
     return session.exec(select(db.Track)).all()
 
 @router.get("/albums/")
-def get_tracks(session: Session = Depends(db.get_session)):
+def get_albums(session: Session = Depends(db.get_session)):
     return session.exec(select(db.Album)).all()
 
 @router.get("/playlists/")
-def get_tracks(session: Session = Depends(db.get_session)):
+def get_playlists(session: Session = Depends(db.get_session)):
     return session.exec(select(db.Playlist)).all()
 
 @router.get("/genres/")
-def get_tracks(session: Session = Depends(db.get_session)):
+def get_genres(session: Session = Depends(db.get_session)):
     return session.exec(select(db.Genre)).all()
 
 @router.get("/tags/")
-def get_tracks(session: Session = Depends(db.get_session)):
+def get_tags(session: Session = Depends(db.get_session)):
     return session.exec(select(db.Tag)).all()
