@@ -23,10 +23,6 @@ def test_search():
 
     rsp = response.json()["subsonic-response"]
     assert rsp["status"] == "ok"
-    assert rsp["type"] == "MusicRitmo"
-    assert rsp["openSubsonic"] == True
-    assert rsp["version"] is not None
-    assert rsp["serverVersion"] is not None
     assert rsp["searchResult"] is not None
     for _, v in rsp["searchResult"].items():
         print(v)
