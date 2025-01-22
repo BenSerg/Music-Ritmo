@@ -240,7 +240,9 @@ async def search2(
             tracks[i]["discNumber"] = 1
             tracks[i]["created"] = years[i]
             tracks[i]["albumId"] = albumTrack[i].id if albumTrack[i] is not None else -1
-            tracks[i]["artistId"] = artistTrack[i][0].id if len(artistTrack[i]) > 0 else -1
+            tracks[i]["artistId"] = (
+                artistTrack[i][0].id if len(artistTrack[i]) > 0 else -1
+            )
             tracks[i]["type"] = types[i]
             tracks[i]["isVideo"] = False
         tracks = tracks[
@@ -311,9 +313,11 @@ async def getArtist(id: int = Query(), session: Session = Depends(db.get_session
     names = [n.name for n in albums]
     years = [y.year for y in albums]
     albArtists = [a.artists for a in albums]
-    albums = [a.model_dump() for a in albums]
+    albums = [{"id": a.id} for a in albums]
     for i in range(len(albums)):
-        albums[i]["parent"] = albArtists[i][0].id if albArtists[i][0] is not None else -1
+        albums[i]["parent"] = (
+            albArtists[i][0].id if albArtists[i][0] is not None else -1
+        )
         albums[i]["coverArt"] = "ar-100000002"
         albums[i]["album"] = names[i]
         albums[i]["title"] = names[i]
@@ -322,19 +326,26 @@ async def getArtist(id: int = Query(), session: Session = Depends(db.get_session
         albums[i]["year"] = years[i]
         albums[i]["isDir"] = True
         albums[i]["songCount"] = len(songs[i])
-        albums[i]["playCount"] = 0
-        albums[i]["artistId"] = albArtists[i][0].id if albArtists[i][0] is not None else -1
+        playCount = [p.plays_count for p in songs[i]]
+        albums[i]["playCount"] = min(playCount)
+        albums[i]["artistId"] = (
+            albArtists[i][0].id if albArtists[i][0] is not None else -1
+        )
         albums[i]["artist"] = albArtists[i][0].name
         duration = sum([s.duration for s in songs[i]])
         albums[i]["duration"] = duration
         genres = [g.genres for g in songs[i]]
-        albums[i]["genre"] = "Pop"
-    artist = artist.model_dump()
-    artist["album"] = albums
-    artist["coverArt"] = f"ar-{id}"
-    artist["albumCount"] = len(albums)
-    artist["starred"] = ""
+        albums[i]["genre"] = (
+            genres[0][0].name if len(genres[0]) > 0 else "Unknown Genre"
+        )
+    resArtist = {}
+    resArtist["id"] = artist.id
+    resArtist["name"] = artist.name
+    resArtist["album"] = albums
+    resArtist["coverArt"] = f"ar-{id}"
+    resArtist["albumCount"] = len(albums)
+    resArtist["starred"] = ""
     rsp = SubsonicResponse()
-    rsp.data["artist"] = artist
+    rsp.data["artist"] = resArtist
 
     return rsp.to_json_rsp()
