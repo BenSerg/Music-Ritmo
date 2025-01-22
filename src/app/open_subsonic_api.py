@@ -255,10 +255,8 @@ async def getGenres(session: Session = Depends(db.get_session)):
     genres = session.exec(select(db.Genre)).all()
     genresValue = [v.name for v in genres]
     tracks = [g.tracks for g in genres]
-    genres = [g.model_dump() for g in genres]
+    genres = [{} for g in genres]
     for i in range(len(genres)):
-        del genres[i]["id"]
-        del genres[i]["name"]
         genres[i]["value"] = genresValue[i]
         genres[i]["songCount"] = len(tracks[i])
         albums = [a.album.name for a in tracks[i]]
@@ -267,6 +265,6 @@ async def getGenres(session: Session = Depends(db.get_session)):
     genresResult = {}
     genresResult["genre"] = genres
     rsp = SubsonicResponse()
-    rsp.data["searchResult"] = genresResult
+    rsp.data["genres"] = genresResult
 
     return rsp.to_json_rsp()
