@@ -306,3 +306,62 @@ async def getArtist(id: int = Query(), session: Session = Depends(db.get_session
     rsp.data["artist"] = artist
 
     return rsp.to_json_rsp()
+
+@open_subsonic_router.get("/getAlbum")
+async def getAlbum(id: int = Query(), session: Session = Depends(db.get_session)):
+    album = session.exec(select(db.Album).where(db.Album.id == id)).one_or_none()
+    if album is None:
+        return JSONResponse(content={"message": "Not Found"}, status_code=404)
+    tracks = album.tracks
+    artists = album.artists
+    artistTrack = [a.artists for a in tracks]
+    albumTrack = [a.album for a in tracks]
+    trackTitles = [t.title for t in tracks]
+    filePath = [p.file_path for p in tracks]
+    playCount = [c.plays_count for c in tracks]
+    years = [y.year for y in tracks]
+    types = [t.type for t in tracks]
+    tracks = [t.model_dump() for t in tracks]
+    for i in range(len(tracks)):
+            tracks[i]["parent"] = albumTrack[i].id if albumTrack[i] is not None else -1
+            tracks[i]["isDir"] = False
+            tracks[i]["title"] = trackTitles[i]
+            tracks[i]["album"] = album.name
+            artist = [a.name for a in artistTrack[i]]
+            tracks[i]["artist"] = " ".join(artist)
+            tracks[i]["track"] = 1
+            tracks[i]["coverArt"] = ["mf-082f435a363c32c57d5edb6a678a28d4_6410b3ce"]
+            tracks[i]["size"] = 19866778
+            tracks[i]["contentType"] = types[i]
+            tracks[i]["suffix"] = "mp3"
+            tracks[i]["starred"] = "2023-03-27T09:45:27Z"
+            tracks[i]["bitRate"] = 880
+            tracks[i]["bitDepth"] = 16
+            tracks[i]["simplingRate"] = 44100
+            tracks[i]["channelCount"] = 2
+            tracks[i]["path"] = filePath[i]
+            tracks[i]["playCount"] = playCount[i]
+            tracks[i]["discNumber"] = 1
+            tracks[i]["created"] = years[i]
+            tracks[i]["albumId"] = album.id
+            tracks[i]["artistId"] = artistTrack[i][0].id if len(artistTrack[i]) > 0 else -1
+            tracks[i]["isVideo"] = False
+    album = album.model_dump()
+    album["parent"] = artists[0].id if artists[0] is not None else -1
+    album["coverArt"] = f"ar-{id}"
+    album["title"] = album["name"]
+    album["isDir"] = True
+    album["songCount"] = len(tracks)
+    album["created"] = album["year"]
+    album["genre"] = "Pop"
+    album["starred"] = ""
+    album["song"] = tracks
+    album["artist"] = artists[0].name if artists[0] is not None else "Unknown Artist"
+    album["artistId"] = artists[0].id if artists[0] is not None else -1
+    album["playCount"] = min(playCount)
+    duration = sum([int(s["duration"]) for s in tracks])
+    album["duration"] = duration
+    rsp = SubsonicResponse()
+    rsp.data["album"] = album
+
+    return rsp.to_json_rsp()
