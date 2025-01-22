@@ -248,3 +248,22 @@ async def search2(
     rsp.data["searchResult"] = searchResult
 
     return rsp.to_json_rsp()
+
+@open_subsonic_router.get("/getGenres")
+async def getGenres(session: Session = Depends(db.get_session)):
+    genres = session.exec(select(db.Genre)).all()
+    genresValue = [v.name for v in genres]
+    tracks = [g.tracks for g in genres]
+    genres = [g.model_dump() for g in genres]
+    for i in range(len(genres)):
+        genres[i]["value"] = genresValue[i]
+        genres[i]["songCount"] = len(tracks[i])
+        albums = [a.album.name for a in tracks[i]]
+        albums = set(albums)
+        genres[i]["albumCount"] = len(albums)
+    genresResult = {}
+    genresResult["genre"] = genres
+    rsp = SubsonicResponse()
+    rsp.data["searchResult"] = genresResult
+
+    return rsp.to_json_rsp()
