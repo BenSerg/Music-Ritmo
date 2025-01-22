@@ -206,6 +206,7 @@ async def search2(
         trackTitles = [t.title for t in tracks]
         filePath = [p.file_path for p in tracks]
         playCount = [c.plays_count for c in tracks]
+        years = [y.year for y in tracks]
         types = [t.type for t in tracks]
         tracks = [t.model_dump() for t in tracks]
         for i in range(len(tracks)):
@@ -230,10 +231,10 @@ async def search2(
             tracks[i]["path"] = filePath[i]
             tracks[i]["playCount"] = playCount[i]
             tracks[i]["discNumber"] = 1
-            tracks[i]["created"] = types
+            tracks[i]["created"] = years[i]
             tracks[i]["albumId"] = albumTrack[i].id if albumTrack[i] is not None else -1
             tracks[i]["artistId"] = artistTrack[i][0].id if len(artistTrack[i]) > 0 else -1
-            tracks[i]["type"] = "music"
+            tracks[i]["type"] = types[i]
             tracks[i]["isVideo"] = False
         tracks = tracks[
             songCount
