@@ -31,9 +31,9 @@ class SubsonicTrack(BaseModel):
     isVideo: bool = False
     type: str = "music"
     albumId: str = Field(default_factory=str)
-    album: Optional[str] = None
+    album: str = ""
     artistId: str = Field(default_factory=str)
-    artist: Optional[str] = ""
+    artist: str = ""
     coverArt: Optional[str] = None
     duration: float = 0
     bitRate: int = 0
@@ -43,8 +43,8 @@ class SubsonicTrack(BaseModel):
     userRating: int = 0
     averageRating: float = 0.0
     track: int = 1
-    year: Optional[int] = None
-    genre: Optional[str] = None
+    year: str = ""
+    genre: str = ""
     size: int = 0
     discNumber: int = 1
     suffix: str = Field(default_factory=str)
@@ -94,8 +94,8 @@ def scroble(id: int, session: Session = Depends(db.get_session)):
     return rsp.to_json_rsp()
 
 
-@open_subsonic_router.get("/getTracksByGenre")
-def get_tracks_by_genre(genre: str, session: Session = Depends(db.get_session)):
+@open_subsonic_router.get("/getSongsByGenre")
+def get_songs_by_genre(genre: str, session: Session = Depends(db.get_session)):
     rsp = SubsonicResponse()
     genre_record = session.exec(
         select(db.Genre).where(db.Genre.name == genre)
@@ -106,15 +106,18 @@ def get_tracks_by_genre(genre: str, session: Session = Depends(db.get_session)):
         track_info = SubsonicTrack()
         track_info.id = str(track.id)
         track_info.title = track.title
-        track_info.type = track.type
         track_info.albumId = str(track.album_id)
-        track_info.album = str(track.album)
+        track_info.album = track.album.name
+        track_info.artistId = str(track.artists[0].id)
+        artist = [a.name for a in track.artists]
+        track_info.artist = ", ".join(artist)
+        track_info.genre = track.genres[0].name
         track_info.duration = track.duration
         track_info.year = track.year
         track_info.path = track.file_path
         tracks_data.append(track_info.model_dump())
 
-    rsp.data["track"] = tracks_data
+    rsp.data["songsByGenre"] = {"song": tracks_data}
     return rsp.to_json_rsp()
 
 

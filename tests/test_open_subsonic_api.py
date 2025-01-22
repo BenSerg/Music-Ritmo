@@ -53,7 +53,7 @@ def test_getPlaylists():
 
 
 def test_get_tracks_by_genre():
-    response = client.get("/rest/getTracksByGenre?genre=Soundtrack")
+    response = client.get("/rest/getSongsByGenre?genre=Soundtrack")
 
     assert response.status_code == 200
     data = response.json()["subsonic-response"]
