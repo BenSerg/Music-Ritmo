@@ -300,3 +300,41 @@ def getSong(id: int, session: Session = Depends(db.get_session)):
     rsp = SubsonicResponse()
     rsp.data["song"] = track_info.model_dump()
     return rsp.to_json_rsp()
+
+@open_subsonic_router.get("/getArtist")
+async def getArtist(id: int = Query(), session: Session = Depends(db.get_session)):
+    artist = session.exec(select(db.Artist).where(db.Artist.id == id)).one_or_none()
+    if artist is None:
+        return JSONResponse(content={"message": "Not Found"}, status_code=404)
+    albums = artist.albums
+    songs = [s.tracks for s in albums]
+    names = [n.name for n in albums]
+    years = [y.year for y in albums]
+    albArtists = [a.artists for a in albums]
+    albums = [a.model_dump() for a in albums]
+    for i in range(len(albums)):
+        albums[i]["parent"] = albArtists[i][0].id if albArtists[i][0] is not None else -1
+        albums[i]["coverArt"] = "ar-100000002"
+        albums[i]["album"] = names[i]
+        albums[i]["title"] = names[i]
+        albums[i]["name"] = names[i]
+        albums[i]["created"] = years[i]
+        albums[i]["year"] = years[i]
+        albums[i]["isDir"] = True
+        albums[i]["songCount"] = len(songs[i])
+        albums[i]["playCount"] = 0
+        albums[i]["artistId"] = albArtists[i][0].id if albArtists[i][0] is not None else -1
+        albums[i]["artist"] = albArtists[i][0].name
+        duration = sum([s.duration for s in songs[i]])
+        albums[i]["duration"] = duration
+        genres = [g.genres for g in songs[i]]
+        albums[i]["genre"] = "Pop"
+    artist = artist.model_dump()
+    artist["album"] = albums
+    artist["coverArt"] = f"ar-{id}"
+    artist["albumCount"] = len(albums)
+    artist["starred"] = ""
+    rsp = SubsonicResponse()
+    rsp.data["artist"] = artist
+
+    return rsp.to_json_rsp()
