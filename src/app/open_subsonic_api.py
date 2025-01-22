@@ -257,6 +257,8 @@ async def getGenres(session: Session = Depends(db.get_session)):
     tracks = [g.tracks for g in genres]
     genres = [g.model_dump() for g in genres]
     for i in range(len(genres)):
+        del genres[i]["id"]
+        del genres[i]["name"]
         genres[i]["value"] = genresValue[i]
         genres[i]["songCount"] = len(tracks[i])
         albums = [a.album.name for a in tracks[i]]
