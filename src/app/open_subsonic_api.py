@@ -243,6 +243,9 @@ async def search2(
             tracks[i]["artistId"] = (
                 artistTrack[i][0].id if len(artistTrack[i]) > 0 else -1
             )
+            tracks[i]["artistId"] = (
+                artistTrack[i][0].id if len(artistTrack[i]) > 0 else -1
+            )
             tracks[i]["type"] = types[i]
             tracks[i]["isVideo"] = False
         tracks = tracks[
