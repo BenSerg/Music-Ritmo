@@ -1,3 +1,4 @@
+import random
 from typing import Optional, List
 
 from fastapi import APIRouter, Depends, Query
@@ -121,6 +122,48 @@ def get_songs_by_genre(genre: str, session: Session = Depends(db.get_session)):
     return rsp.to_json_rsp()
 
 
+@open_subsonic_router.get("/getRandomSongs")
+def get_random_songs(size: int = 10,
+                     genre: Optional[str] = None,
+                     from_year: Optional[str] = None,
+                     to_year: Optional[str] = None,
+                     session: Session = Depends(db.get_session)):
+    query = select(db.Track)
+    if genre:
+        query = query.where(db.Genre.name == genre)
+    if from_year:
+        query = query.where(db.Track.year >= from_year)
+    if to_year:
+        query = query.where(db.Track.year <= to_year)
+
+    tracks = session.exec(query).all()
+    if not tracks:
+        return JSONResponse({"detail": "No tracks found"}, status_code=404)
+
+    random_tracks = random.sample(tracks, min(size, len(tracks)))
+
+    response_tracks = []
+    for track in random_tracks:
+        track_info = SubsonicTrack()
+        track_info.id = str(track.id)
+        track_info.title = track.title
+        track_info.albumId = str(track.album_id)
+        track_info.album = track.album.name
+        track_info.artistId = str(track.artists[0].id) if track.artists else None
+        artist_names = [a.name for a in track.artists]
+        track_info.artist = ", ".join(artist_names)
+        track_info.genre = track.genres[0].name if track.genres else None
+        track_info.duration = track.duration
+        track_info.year = track.year
+        track_info.path = track.file_path
+
+        response_tracks.append(track_info.model_dump())
+
+    rsp = SubsonicResponse()
+    rsp.data["song"] = response_tracks
+    return rsp.to_json_rsp()
+
+
 @open_subsonic_router.get("/download")
 async def download(id: int, session: Session = Depends(db.get_session)):
     track = session.exec(select(db.Track).where(db.Track.id == id)).first()
@@ -141,14 +184,14 @@ async def download(id: int, session: Session = Depends(db.get_session)):
 
 @open_subsonic_router.get("/search2")
 async def search2(
-    query: str = Query(),
-    artistCount: int = Query(default=20),
-    artistOffset: int = Query(default=0),
-    albumCount: int = Query(default=20),
-    albumOffset: int = Query(default=0),
-    songCount: int = Query(default=20),
-    songOffset: int = Query(default=0),
-    session: Session = Depends(db.get_session),
+        query: str = Query(),
+        artistCount: int = Query(default=20),
+        artistOffset: int = Query(default=0),
+        albumCount: int = Query(default=20),
+        albumOffset: int = Query(default=0),
+        songCount: int = Query(default=20),
+        songOffset: int = Query(default=0),
+        session: Session = Depends(db.get_session),
 ):
     name = query
     artists = session.exec(select(db.Artist)).all()
@@ -163,9 +206,9 @@ async def search2(
             artists[i]["coverArt"] = "ar-100000002"
             artists[i]["starred"] = "2021-02-22T05:54:18Z"
         artists = artists[
-            artistCount
-            * artistOffset : min(len(artists), artistCount * artistOffset + artistCount)
-        ]
+                  artistCount
+                  * artistOffset: min(len(artists), artistCount * artistOffset + artistCount)
+                  ]
 
     albums = session.exec(select(db.Album)).all()
     if albumCount * albumOffset >= len(albums):
@@ -199,9 +242,9 @@ async def search2(
             genres = [g.genres for g in songs[i]]
             albums[i]["genre"] = "Pop"
         albums = albums[
-            albumCount
-            * albumOffset : min(len(albums), albumCount * albumOffset + albumCount)
-        ]
+                 albumCount
+                 * albumOffset: min(len(albums), albumCount * albumOffset + albumCount)
+                 ]
 
     tracks = session.exec(select(db.Track)).all()
     if songCount * songOffset >= len(tracks):
@@ -244,9 +287,9 @@ async def search2(
             tracks[i]["type"] = types[i]
             tracks[i]["isVideo"] = False
         tracks = tracks[
-            songCount
-            * songOffset : min(len(tracks), songCount * songOffset + songCount)
-        ]
+                 songCount
+                 * songOffset: min(len(tracks), songCount * songOffset + songCount)
+                 ]
 
     searchResult = {}
     searchResult["artist"] = artists
@@ -283,7 +326,7 @@ def getSong(id: int, session: Session = Depends(db.get_session)):
     track = session.exec(select(db.Track).where(db.Track.id == id)).first()
     if track is None:
         return JSONResponse({"detail": "No such id"}, status_code=404)
-    
+
     track_info = SubsonicTrack()
     track_info.id = str(track.id)
     track_info.title = track.title
