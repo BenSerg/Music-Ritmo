@@ -1,4 +1,3 @@
-import random
 from typing import Optional, List
 
 from fastapi import APIRouter, Depends, Query
@@ -7,6 +6,7 @@ from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
 from . import database as db
+from . import service_layer
 
 open_subsonic_router = APIRouter(prefix="/rest")
 
@@ -122,48 +122,6 @@ def get_songs_by_genre(genre: str, session: Session = Depends(db.get_session)):
     return rsp.to_json_rsp()
 
 
-@open_subsonic_router.get("/getRandomSongs")
-def get_random_songs(size: int = 10,
-                     genre: Optional[str] = None,
-                     from_year: Optional[str] = None,
-                     to_year: Optional[str] = None,
-                     session: Session = Depends(db.get_session)):
-    query = select(db.Track)
-    if genre:
-        query = query.where(db.Genre.name == genre)
-    if from_year:
-        query = query.where(db.Track.year >= from_year)
-    if to_year:
-        query = query.where(db.Track.year <= to_year)
-
-    tracks = session.exec(query).all()
-    if not tracks:
-        return JSONResponse({"detail": "No tracks found"}, status_code=404)
-
-    random_tracks = random.sample(tracks, min(size, len(tracks)))
-
-    response_tracks = []
-    for track in random_tracks:
-        track_info = SubsonicTrack()
-        track_info.id = str(track.id)
-        track_info.title = track.title
-        track_info.albumId = str(track.album_id)
-        track_info.album = track.album.name
-        track_info.artistId = str(track.artists[0].id) if track.artists else None
-        artist_names = [a.name for a in track.artists]
-        track_info.artist = ", ".join(artist_names)
-        track_info.genre = track.genres[0].name if track.genres else None
-        track_info.duration = track.duration
-        track_info.year = track.year
-        track_info.path = track.file_path
-
-        response_tracks.append(track_info.model_dump())
-
-    rsp = SubsonicResponse()
-    rsp.data["song"] = response_tracks
-    return rsp.to_json_rsp()
-
-
 @open_subsonic_router.get("/download")
 async def download(id: int, session: Session = Depends(db.get_session)):
     track = session.exec(select(db.Track).where(db.Track.id == id)).first()
@@ -193,128 +151,20 @@ async def search2(
         songOffset: int = Query(default=0),
         session: Session = Depends(db.get_session),
 ):
-    name = query
-    artists = session.exec(select(db.Artist)).all()
-    if artistCount * artistOffset >= len(artists):
-        artists = []
-    else:
-        artists = [a for a in artists if name in a.name]
-        albumNum = [len(a.albums) for a in artists]
-        artists = [a.model_dump() for a in artists]
-        for i in range(len(artists)):
-            artists[i]["albumCount"] = albumNum[i]
-            artists[i]["coverArt"] = "ar-100000002"
-            artists[i]["starred"] = "2021-02-22T05:54:18Z"
-        artists = artists[
-                  artistCount
-                  * artistOffset: min(len(artists), artistCount * artistOffset + artistCount)
-                  ]
-
-    albums = session.exec(select(db.Album)).all()
-    if albumCount * albumOffset >= len(albums):
-        albums = []
-    else:
-        albums = [a for a in albums if name in a.name]
-        songs = [s.tracks for s in albums]
-        names = [n.name for n in albums]
-        years = [y.year for y in albums]
-        albArtists = [a.artists for a in albums]
-        albums = [a.model_dump() for a in albums]
-        for i in range(len(albums)):
-            albums[i]["parent"] = (
-                albArtists[i][0].id if albArtists[i][0] is not None else -1
-            )
-            albums[i]["coverArt"] = "ar-100000002"
-            albums[i]["album"] = names[i]
-            albums[i]["title"] = names[i]
-            albums[i]["name"] = names[i]
-            albums[i]["created"] = years[i]
-            albums[i]["year"] = years[i]
-            albums[i]["isDir"] = True
-            albums[i]["songCount"] = len(songs[i])
-            albums[i]["playCount"] = 0
-            albums[i]["artistId"] = (
-                albArtists[i][0].id if albArtists[i][0] is not None else -1
-            )
-            albums[i]["artist"] = albArtists[i][0].name
-            duration = sum([s.duration for s in songs[i]])
-            albums[i]["duration"] = duration
-            genres = [g.genres for g in songs[i]]
-            albums[i]["genre"] = "Pop"
-        albums = albums[
-                 albumCount
-                 * albumOffset: min(len(albums), albumCount * albumOffset + albumCount)
-                 ]
-
-    tracks = session.exec(select(db.Track)).all()
-    if songCount * songOffset >= len(tracks):
-        tracks = []
-    else:
-        tracks = [a for a in tracks if name in a.title]
-        artistTrack = [a.artists for a in tracks]
-        albumTrack = [a.album for a in tracks]
-        trackTitles = [t.title for t in tracks]
-        filePath = [p.file_path for p in tracks]
-        playCount = [c.plays_count for c in tracks]
-        years = [y.year for y in tracks]
-        types = [t.type for t in tracks]
-        tracks = [t.model_dump() for t in tracks]
-        for i in range(len(tracks)):
-            tracks[i]["parent"] = albumTrack[i].id if albumTrack[i] is not None else -1
-            tracks[i]["isDir"] = False
-            tracks[i]["title"] = trackTitles[i]
-            tracks[i]["album"] = (
-                albumTrack[i].name if albumTrack[i] is not None else "Unknown Album"
-            )
-            artist = [a.name for a in artistTrack[i]]
-            tracks[i]["artist"] = " ".join(artist)
-            tracks[i]["track"] = 1
-            tracks[i]["coverArt"] = ["mf-082f435a363c32c57d5edb6a678a28d4_6410b3ce"]
-            tracks[i]["size"] = 19866778
-            tracks[i]["contentType"] = types[i]
-            tracks[i]["suffix"] = "mp3"
-            tracks[i]["starred"] = "2023-03-27T09:45:27Z"
-            tracks[i]["bitRate"] = 880
-            tracks[i]["bitDepth"] = 16
-            tracks[i]["simplingRate"] = 44100
-            tracks[i]["channelCount"] = 2
-            tracks[i]["path"] = filePath[i]
-            tracks[i]["playCount"] = playCount[i]
-            tracks[i]["discNumber"] = 1
-            tracks[i]["created"] = years[i]
-            tracks[i]["albumId"] = albumTrack[i].id if albumTrack[i] is not None else -1
-            tracks[i]["artistId"] = artistTrack[i][0].id if len(artistTrack[i]) > 0 else -1
-            tracks[i]["type"] = types[i]
-            tracks[i]["isVideo"] = False
-        tracks = tracks[
-                 songCount
-                 * songOffset: min(len(tracks), songCount * songOffset + songCount)
-                 ]
-
-    searchResult = {}
-    searchResult["artist"] = artists
-    searchResult["song"] = tracks
-    searchResult["album"] = albums
+    service = service_layer.SearchService(session)
+    result = service.search2(
+        query, artistCount, artistOffset, albumCount, albumOffset, songCount, songOffset
+    )
     rsp = SubsonicResponse()
-    rsp.data["searchResult"] = searchResult
+    rsp.data["searchResult2"] = result
 
     return rsp.to_json_rsp()
 
 
 @open_subsonic_router.get("/getGenres")
 async def getGenres(session: Session = Depends(db.get_session)):
-    genres = session.exec(select(db.Genre)).all()
-    genresValue = [v.name for v in genres]
-    tracks = [g.tracks for g in genres]
-    genres = [{} for g in genres]
-    for i in range(len(genres)):
-        genres[i]["value"] = genresValue[i]
-        genres[i]["songCount"] = len(tracks[i])
-        albums = [a.album.name for a in tracks[i]]
-        albums = set(albums)
-        genres[i]["albumCount"] = len(albums)
-    genresResult = {}
-    genresResult["genre"] = genres
+    service = service_layer.GenreService(session)
+    genresResult = service.getGenres()
     rsp = SubsonicResponse()
     rsp.data["genres"] = genresResult
 
@@ -323,23 +173,51 @@ async def getGenres(session: Session = Depends(db.get_session)):
 
 @open_subsonic_router.get("/getSong")
 def getSong(id: int, session: Session = Depends(db.get_session)):
-    track = session.exec(select(db.Track).where(db.Track.id == id)).first()
+    service = service_layer.TrackService(session)
+    track = service.getSongById(id)
     if track is None:
         return JSONResponse({"detail": "No such id"}, status_code=404)
 
-    track_info = SubsonicTrack()
-    track_info.id = str(track.id)
-    track_info.title = track.title
-    track_info.albumId = str(track.album_id)
-    track_info.album = track.album.name
-    track_info.artistId = str(track.artists[0].id)
-    artist = [a.name for a in track.artists]
-    track_info.artist = ", ".join(artist)
-    track_info.genre = track.genres[0].name
-    track_info.duration = track.duration
-    track_info.year = track.year
-    track_info.path = track.file_path
+    rsp = SubsonicResponse()
+    rsp.data["song"] = track
+    return rsp.to_json_rsp()
+
+
+@open_subsonic_router.get("/getRandomSongs")
+def getRandomSongs(size: int = 10,
+                   genre: Optional[str] = None,
+                   fromYear: Optional[str] = None,
+                   toYear: Optional[str] = None,
+                   session: Session = Depends(db.get_session)):
+    service = service_layer.TrackService(session)
+    tracks = service.getRandomSongs(size, genre, fromYear, toYear)
+    if tracks is None:
+        return JSONResponse({"detail": "No page found"}, status_code=404)
 
     rsp = SubsonicResponse()
-    rsp.data["song"] = track_info.model_dump()
+    rsp.data["song"] = tracks
+    return rsp.to_json_rsp()
+
+
+@open_subsonic_router.get("/getArtist")
+def getArtist(id: int, session: Session = Depends(db.get_session)):
+    service = service_layer.ArtistService(session)
+    artist = service.getArtistById(id)
+    if artist is None:
+        return JSONResponse({"detail": "No such id"}, status_code=404)
+
+    rsp = SubsonicResponse()
+    rsp.data["artist"] = artist
+    return rsp.to_json_rsp()
+
+
+@open_subsonic_router.get("/getAlbum")
+def getAlbum(id: int, session: Session = Depends(db.get_session)):
+    service = service_layer.AlbumService(session)
+    album = service.getAlbumById(id)
+    if album is None:
+        return JSONResponse({"detail": "No such id"}, status_code=404)
+
+    rsp = SubsonicResponse()
+    rsp.data["album"] = album
     return rsp.to_json_rsp()
