@@ -261,3 +261,29 @@ class SearchService:
                      ]
 
         return self.__class__.getOpenSubsonicFormat(artists, albums, tracks)
+
+    def search3(
+            self,
+            query,
+            artistCount,
+            artistOffset,
+            albumCount,
+            albumOffset,
+            songCount,
+            songOffset,
+    ):
+        if query != "":
+            return self.search2(
+                query,
+                artistCount,
+                artistOffset,
+                albumCount,
+                albumOffset,
+                songCount,
+                songOffset,
+            )
+        artists = self.ArtistDBHelper.getAllArtists()
+        albums = self.AlbumDBHelper.getAllAlbums()
+        tracks = self.TrackDBHelper.getAllTracks()
+
+        return self.__class__.getOpenSubsonicFormat(artists, albums, tracks)
