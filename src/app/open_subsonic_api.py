@@ -143,6 +143,27 @@ async def search2(
     return rsp.to_json_rsp()
 
 
+@open_subsonic_router.get("/search3")
+async def search3(
+    query: str = Query(),
+    artistCount: int = Query(default=20),
+    artistOffset: int = Query(default=0),
+    albumCount: int = Query(default=20),
+    albumOffset: int = Query(default=0),
+    songCount: int = Query(default=20),
+    songOffset: int = Query(default=0),
+    session: Session = Depends(db.get_session),
+):
+    service = service_layer.SearchService(session)
+    result = service.search3(
+        query, artistCount, artistOffset, albumCount, albumOffset, songCount, songOffset
+    )
+    rsp = SubsonicResponse()
+    rsp.data["searchResult3"] = result
+
+    return rsp.to_json_rsp()
+
+
 @open_subsonic_router.get("/getGenres")
 async def getGenres(session: Session = Depends(db.get_session)):
     service = service_layer.GenreService(session)
