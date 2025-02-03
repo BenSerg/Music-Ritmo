@@ -124,14 +124,14 @@ async def download(id: int, session: Session = Depends(db.get_session)):
 
 @open_subsonic_router.get("/search2")
 async def search2(
-        query: str = Query(),
-        artistCount: int = Query(default=20),
-        artistOffset: int = Query(default=0),
-        albumCount: int = Query(default=20),
-        albumOffset: int = Query(default=0),
-        songCount: int = Query(default=20),
-        songOffset: int = Query(default=0),
-        session: Session = Depends(db.get_session),
+    query: str = Query(),
+    artistCount: int = Query(default=20),
+    artistOffset: int = Query(default=0),
+    albumCount: int = Query(default=20),
+    albumOffset: int = Query(default=0),
+    songCount: int = Query(default=20),
+    songOffset: int = Query(default=0),
+    session: Session = Depends(db.get_session),
 ):
     service = service_layer.SearchService(session)
     result = service.search2(
@@ -187,18 +187,20 @@ def getSong(id: int, session: Session = Depends(db.get_session)):
 
 
 @open_subsonic_router.get("/getRandomSongs")
-def getRandomSongs(size: int = 10,
-                   genre: Optional[str] = None,
-                   fromYear: Optional[str] = None,
-                   toYear: Optional[str] = None,
-                   session: Session = Depends(db.get_session)):
+def getRandomSongs(
+    size: int = 10,
+    genre: Optional[str] = None,
+    fromYear: Optional[str] = None,
+    toYear: Optional[str] = None,
+    session: Session = Depends(db.get_session),
+):
     service = service_layer.TrackService(session)
     tracks = service.getRandomSongs(size, genre, fromYear, toYear)
     if tracks is None:
         return JSONResponse({"detail": "No page found"}, status_code=404)
 
     rsp = SubsonicResponse()
-    rsp.data["song"] = tracks
+    rsp.data["randomSongs"] = {"song": tracks}
     return rsp.to_json_rsp()
 
 

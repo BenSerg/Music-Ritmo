@@ -28,7 +28,7 @@ def test_getPlaylists():
             name="My Playlist",
             user_id=user.id,
             total_tracks=10,
-            create_date="2025-01-01"
+            create_date="2025-01-01",
         )
         session.add(playlist)
         session.commit()
@@ -64,13 +64,13 @@ def test_get_tracks_by_genre():
 def test_get_random_songs_no_filters():
     response = client.get("/rest/getRandomSongs?size=2")
     assert response.status_code == 200
-    assert len(response.json()['subsonic-response']["song"]) == 2
+    assert len(response.json()["subsonic-response"]["randomSongs"]["song"]) == 2
 
 
 def test_get_random_songs_with_year_filter():
     response = client.get("/rest/getRandomSongs?size=2&fromYear=2024")
     assert response.status_code == 200
-    assert len(response.json()["subsonic-response"]["song"]) == 2
+    assert len(response.json()["subsonic-response"]["randomSongs"]["song"]) == 2
 
     response = client.get("/rest/getRandomSongs?size=2&toYear=2010")
-    assert not response.json()['subsonic-response']["song"]
+    assert not response.json()["subsonic-response"]["randomSongs"]["song"]
