@@ -3,6 +3,7 @@ from typing import List, Optional
 from sqlmodel import Session
 from . import db_helpers
 from . import database as db
+from dataclasses import dataclass
 
 
 class AlbumService:

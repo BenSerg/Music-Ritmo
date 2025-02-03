@@ -226,3 +226,37 @@ def getAlbum(id: int, session: Session = Depends(db.get_session)):
     rsp = SubsonicResponse()
     rsp.data["album"] = album
     return rsp.to_json_rsp()
+
+
+@open_subsonic_router.get("/getIndexes")
+def getIndexes(
+    musicFolderId: str = Query(default=""),
+    ifModifiedSince: int = Query(default=0),
+    session: Session = Depends(db.get_session),
+):
+    indexService = service_layer.IndexService(session)
+
+    indexes = indexService.getIndexesArtists(
+        musicFolderId, ifModifiedSince, withChilds=True
+    )
+
+    rsp = SubsonicResponse()
+    rsp.data["indexes"] = indexes
+    rsp.data["indexes"]["ignoredArticles"] = ""
+    rsp.data["indexes"]["lastModified"] = 0
+    return rsp.to_json_rsp()
+
+
+@open_subsonic_router.get("/getArtists")
+def getArtists(
+    musicFolderId: str = Query(default=""),
+    session: Session = Depends(db.get_session),
+):
+    indexService = service_layer.IndexService(session)
+
+    indexes = indexService.getIndexesArtists(musicFolderId)
+
+    rsp = SubsonicResponse()
+    rsp.data["artists"] = indexes
+    rsp.data["artists"]["ignoredArticles"] = ""
+    return rsp.to_json_rsp()
