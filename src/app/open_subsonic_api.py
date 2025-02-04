@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse, FileResponse
@@ -13,12 +13,13 @@ open_subsonic_router = APIRouter(prefix="/rest")
 
 class SubsonicResponse:
     def __init__(self):
-        self.data = {}
-        self.data["status"] = "ok"
-        self.data["version"] = "1.16.1"
-        self.data["type"] = "MusicRitmo"
-        self.data["serverVersion"] = "0.1"
-        self.data["openSubsonic"] = True
+        self.data = {
+            "status": "ok",
+            "version": "1.16.1",
+            "type": "MusicRitmo",
+            "serverVersion": "0.1",
+            "openSubsonic": True,
+        }
 
     def to_json_rsp(self) -> JSONResponse:
         return JSONResponse({"subsonic-response": self.data})
@@ -99,7 +100,7 @@ def scroble(id: int, session: Session = Depends(db.get_session)):
 def get_songs_by_genre(genre: str, session: Session = Depends(db.get_session)):
     rsp = SubsonicResponse()
     service = service_layer.TrackService(session)
-    tracks = service.getSongsByGenre(genre)
+    tracks = service.get_songs_by_genre(genre)
     rsp.data["songsByGenre"] = {"song": tracks}
     return rsp.to_json_rsp()
 
@@ -114,7 +115,7 @@ async def download(id: int, session: Session = Depends(db.get_session)):
 
 
 @open_subsonic_router.get("/stream")
-async def download(id: int, session: Session = Depends(db.get_session)):
+async def stream(id: int, session: Session = Depends(db.get_session)):
     track = session.exec(select(db.Track).where(db.Track.id == id)).first()
     if track is None:
         return JSONResponse({"detail": "No such id"}, status_code=404)
@@ -165,19 +166,19 @@ async def search3(
 
 
 @open_subsonic_router.get("/getGenres")
-async def getGenres(session: Session = Depends(db.get_session)):
+async def get_genres(session: Session = Depends(db.get_session)):
     service = service_layer.GenreService(session)
-    genresResult = service.getGenres()
+    genres_result = service.get_genres()
     rsp = SubsonicResponse()
-    rsp.data["genres"] = genresResult
+    rsp.data["genres"] = genres_result
 
     return rsp.to_json_rsp()
 
 
 @open_subsonic_router.get("/getSong")
-def getSong(id: int, session: Session = Depends(db.get_session)):
+def get_song(id: int, session: Session = Depends(db.get_session)):
     service = service_layer.TrackService(session)
-    track = service.getSongById(id)
+    track = service.get_song_by_id(id)
     if track is None:
         return JSONResponse({"detail": "No such id"}, status_code=404)
 
@@ -187,7 +188,7 @@ def getSong(id: int, session: Session = Depends(db.get_session)):
 
 
 @open_subsonic_router.get("/getRandomSongs")
-def getRandomSongs(
+def get_random_songs(
     size: int = 10,
     genre: Optional[str] = None,
     fromYear: Optional[str] = None,
@@ -195,7 +196,7 @@ def getRandomSongs(
     session: Session = Depends(db.get_session),
 ):
     service = service_layer.TrackService(session)
-    tracks = service.getRandomSongs(size, genre, fromYear, toYear)
+    tracks = service.get_random_songs(size, genre, fromYear, toYear)
     if tracks is None:
         return JSONResponse({"detail": "No page found"}, status_code=404)
 
@@ -205,9 +206,9 @@ def getRandomSongs(
 
 
 @open_subsonic_router.get("/getArtist")
-def getArtist(id: int, session: Session = Depends(db.get_session)):
+def get_artist(id: int, session: Session = Depends(db.get_session)):
     service = service_layer.ArtistService(session)
-    artist = service.getArtistById(id)
+    artist = service.get_artist_by_id(id)
     if artist is None:
         return JSONResponse({"detail": "No such id"}, status_code=404)
 
@@ -217,9 +218,9 @@ def getArtist(id: int, session: Session = Depends(db.get_session)):
 
 
 @open_subsonic_router.get("/getAlbum")
-def getAlbum(id: int, session: Session = Depends(db.get_session)):
+def get_album(id: int, session: Session = Depends(db.get_session)):
     service = service_layer.AlbumService(session)
-    album = service.getAlbumById(id)
+    album = service.get_album_by_id(id)
     if album is None:
         return JSONResponse({"detail": "No such id"}, status_code=404)
 
@@ -229,15 +230,15 @@ def getAlbum(id: int, session: Session = Depends(db.get_session)):
 
 
 @open_subsonic_router.get("/getIndexes")
-def getIndexes(
+def get_indexes(
     musicFolderId: str = Query(default=""),
     ifModifiedSince: int = Query(default=0),
     session: Session = Depends(db.get_session),
 ):
-    indexService = service_layer.IndexService(session)
+    index_service = service_layer.IndexService(session)
 
-    indexes = indexService.getIndexesArtists(
-        musicFolderId, ifModifiedSince, withChilds=True
+    indexes = index_service.get_indexes_artists(
+        musicFolderId, ifModifiedSince, with_childs=True
     )
 
     rsp = SubsonicResponse()
@@ -248,13 +249,13 @@ def getIndexes(
 
 
 @open_subsonic_router.get("/getArtists")
-def getArtists(
+def get_artists(
     musicFolderId: str = Query(default=""),
     session: Session = Depends(db.get_session),
 ):
-    indexService = service_layer.IndexService(session)
+    index_service = service_layer.IndexService(session)
 
-    indexes = indexService.getIndexesArtists(musicFolderId)
+    indexes = index_service.get_indexes_artists(musicFolderId)
 
     rsp = SubsonicResponse()
     rsp.data["artists"] = indexes

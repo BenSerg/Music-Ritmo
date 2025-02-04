@@ -1,9 +1,11 @@
 import random
-from typing import List, Optional
-from sqlmodel import Session
-from . import db_helpers
-from . import database as db
 from dataclasses import dataclass
+from typing import List, Optional, Dict, Union
+
+from sqlmodel import Session
+
+from . import database as db
+from . import db_helpers
 
 
 class AlbumService:
@@ -11,9 +13,11 @@ class AlbumService:
         self.DBHelper = db_helpers.AlbumDBHelper(session)
 
     @staticmethod
-    def getOpenSubsonicFormat(album: db.Album, withSongs=False):
-        genres = [g.genres for g in album.tracks]
-        resAlbum = {
+    def get_open_subsonic_format(
+        album: db.Album, with_songs: bool = False
+    ) -> dict[str, Optional[Union[str, int, List[dict]]]]:
+        genres: List[List[db.Genre]] = [g.genres for g in album.tracks]
+        res_album: dict[str, Optional[Union[str, int, List[dict]]]] = {
             "id": album.id,
             "parent": album.artists[0].id if album.artists[0] is not None else -1,
             "album": album.name,
@@ -35,31 +39,31 @@ class AlbumService:
             "starred": "",
             "genre": genres[0][0].name if len(genres[0]) > 0 else "Unknown Genre",
         }
-        if withSongs:
+        if with_songs:
             tracks = []
-            for i in album.tracks:
-                tracks.append(TrackService.getOpenSubsonicFormat(i))
-            resAlbum["song"] = tracks
-        return resAlbum
+            for album_track in album.tracks:
+                tracks.append(TrackService.get_open_subsonic_format(album_track))
+            res_album["song"] = tracks  # Здесь tracks - это список
+        return res_album
 
-    def getAlbumById(self, id):
-        album = self.DBHelper.getAlbumById(id)
+    def get_album_by_id(self, id):
+        album = self.DBHelper.get_album_by_id(id)
         if album:
-            album = self.__class__.getOpenSubsonicFormat(album, withSongs=True)
+            album = self.__class__.get_open_subsonic_format(album, with_songs=True)
         return album
 
-    def getAlbumInfo2(self, id):
+    def get_album_info2(self, id):
         pass
 
-    def getAlbumList(
+    def get_album_list(
         self,
         type,
         size=10,
         offset=10,
-        fromYear=None,
-        toYear=None,
+        from_year=None,
+        to_year=None,
         genre=None,
-        musicFolderId=None,
+        music_folder_id=None,
     ):
         pass
 
@@ -70,14 +74,16 @@ class TrackService:
         self.genre_helper = db_helpers.GenresDBHelper(session)
 
     @staticmethod
-    def getOpenSubsonicFormat(track: db.Track, withGenres=False, withArtists=False):
-        resSong = {
+    def get_open_subsonic_format(
+        track: db.Track, with_genres=False, with_artists=False
+    ):
+        res_song = {
             "id": track.id,
             "parent": track.album_id,
             "isDir": False,
             "title": track.title,
             "album": track.album.name,
-            "artist": ArtistService.joinArtistsNames(track.artists),
+            "artist": ArtistService.join_artists_names(track.artists),
             "track": 1,
             "year": track.year,
             "coverArt": f"mf-{track.id}",
@@ -99,62 +105,64 @@ class TrackService:
             "type": track.type,
             "isVideo": False,
         }
-        if withGenres:
+        if with_genres:
             genres = []
-            for i in track.genres:
-                genres.append(GenreService.getOpenSubsonicFormat(i, ItemGenre=True))
-            resSong["genres"] = genres
-        if withArtists:
+            for genre in track.genres:
+                genres.append(
+                    GenreService.get_open_subsonic_format(genre, item_genre=True)
+                )
+            res_song["genres"] = genres
+        if with_artists:
             artists = []
-            for i in track.artists:
-                artists.append(ArtistService.getOpenSubsonicFormat(i))
-            resSong["artists"] = artists
-        return resSong
+            for artist in track.artists:
+                artists.append(ArtistService.get_open_subsonic_format(artist))
+            res_song["artists"] = artists
+        return res_song
 
-    def getSongById(self, id):
-        track = self.DBHelper.getTrackById(id)
+    def get_song_by_id(self, id):
+        track = self.DBHelper.get_track_by_id(id)
         if track:
-            track = self.__class__.getOpenSubsonicFormat(
-                track, withGenres=True, withArtists=True
+            track = self.__class__.get_open_subsonic_format(
+                track, with_genres=True, with_artists=True
             )
         return track
 
     def _get_tracks_by_genre_without_subsonic(
-        self, genre, count=10, offset=0, musicFolder=None
+        self, genre, count=10, offset=0, music_folder=None
     ):
-        genre = self.genre_helper.get_genres_by_name(filterName=genre)
+        genre = self.genre_helper.get_genres_by_name(filter_name=genre)
         return [] if not genre else genre[-1].tracks[offset : offset + count]
 
-    def getSongsByGenre(self, genre, count=10, offset=0, musicFolder=None):
+    def get_songs_by_genre(self, genre, count=10, offset=0, music_folder=None):
         return [
-            self.getOpenSubsonicFormat(track, withGenres=False)
+            self.get_open_subsonic_format(track, with_genres=False)
             for track in self._get_tracks_by_genre_without_subsonic(
-                genre, count, offset, musicFolder
+                genre, count, offset, music_folder
             )
         ]
 
-    def getRandomSongs(
+    def get_random_songs(
         self,
         size=10,
         genre: Optional[str] = None,
-        fromYear: Optional[str] = None,
-        toYear: Optional[str] = None,
-        musicFolderId: Optional[str] = None,
+        from_year: Optional[str] = None,
+        to_year: Optional[str] = None,
+        music_folder_id: Optional[str] = None,
     ):
-        tracks = self.DBHelper.getAllTracks()
+        tracks = self.DBHelper.get_all_tracks()
         if genre:
             tracks = self._get_tracks_by_genre_without_subsonic(genre)
-        if fromYear:
+        if from_year:
             tracks = list(
-                filter(lambda track: track.year and track.year >= fromYear, tracks)
+                filter(lambda track: track.year and track.year >= from_year, tracks)
             )
-        if toYear:
+        if to_year:
             tracks = list(
-                filter(lambda track: track.year and track.year <= toYear, tracks)
+                filter(lambda track: track.year and track.year <= to_year, tracks)
             )
         random_tracks = random.sample(tracks, min(size, len(tracks)))
         return [
-            self.getOpenSubsonicFormat(track, withGenres=False, withArtists=False)
+            self.get_open_subsonic_format(track, with_genres=False, with_artists=False)
             for track in random_tracks
         ]
 
@@ -164,22 +172,22 @@ class GenreService:
         self.DBHelper = db_helpers.GenresDBHelper(session)
 
     @staticmethod
-    def getOpenSubsonicFormat(genre: db.Genre, ItemGenre=False):
-        if ItemGenre:
+    def get_open_subsonic_format(genre: db.Genre, item_genre=False):
+        if item_genre:
             return {"name": genre.name}
-        resGenre = {
+        res_genre = {
             "songCount": len(genre.tracks),
             "AlbumCount": len(set([a.album.name for a in genre.tracks])),
             "value": genre.name,
         }
 
-        return resGenre
+        return res_genre
 
-    def getGenres(self):
-        genres = self.DBHelper.getAllGenres()
+    def get_genres(self):
+        genres = self.DBHelper.get_all_genres()
         if genres:
             genres = {
-                "genre:": [self.__class__.getOpenSubsonicFormat(g) for g in genres]
+                "genre:": [self.__class__.get_open_subsonic_format(g) for g in genres]
             }
         return genres
 
@@ -189,35 +197,37 @@ class ArtistService:
         self.DBHelper = db_helpers.ArtistDBHelper(session)
 
     @staticmethod
-    def joinArtistsNames(artists: List[db.Artist]):
+    def join_artists_names(artists: List[db.Artist]):
         return ", ".join(a.name for a in artists)
 
     @staticmethod
-    def getOpenSubsonicFormat(artist: db.Artist, withAlbums=False):
-        resArtist = {
+    def get_open_subsonic_format(
+        artist: db.Artist, with_albums: bool = False
+    ) -> dict[str, Optional[Union[str, int, List[dict]]]]:
+        res_artist: dict[str, Optional[Union[str, int, List[dict]]]] = {
             "id": artist.id,
             "name": artist.name,
             "coverArt": f"ar-{artist.id}",
             "albumCount": len(artist.albums),
-            "starred": "",
+            "starred": None,
         }
-        if withAlbums:
+        if with_albums:
             albums = []
             for i in artist.albums:
-                albums.append(AlbumService.getOpenSubsonicFormat(i))
-            resArtist["album"] = albums
-        return resArtist
+                albums.append(AlbumService.get_open_subsonic_format(i))
+            res_artist["album"] = albums
+        return res_artist
 
-    def getArtistById(self, id):
-        artist = self.DBHelper.getArtistById(id)
+    def get_artist_by_id(self, id):
+        artist = self.DBHelper.get_artist_by_id(id)
         if artist:
-            artist = self.__class__.getOpenSubsonicFormat(artist, withAlbums=True)
+            artist = self.__class__.get_open_subsonic_format(artist, with_albums=True)
         return artist
 
-    def getArtists(self, musicFolder=None):
+    def get_artists(self, music_folder=None):
         pass
 
-    def getArtistInfo2(self, id, count=20, includeNotPresent=False):
+    def get_artist_info2(self, id, count=20, include_not_present=False):
         pass
 
 
@@ -228,81 +238,132 @@ class SearchService:
         self.TrackDBHelper = db_helpers.TrackDBHelper(session)
 
     @staticmethod
-    def getOpenSubsonicFormat(
+    def get_open_subsonic_format(
         artists: List[db.Artist], albums: List[db.Album], tracks: List[db.Track]
     ):
 
-        resSearch = {
-            "artist": [ArtistService.getOpenSubsonicFormat(a) for a in artists],
-            "album": [AlbumService.getOpenSubsonicFormat(a) for a in albums],
-            "song": [TrackService.getOpenSubsonicFormat(a) for a in tracks],
+        res_search = {
+            "artist": [ArtistService.get_open_subsonic_format(a) for a in artists],
+            "album": [AlbumService.get_open_subsonic_format(a) for a in albums],
+            "song": [TrackService.get_open_subsonic_format(a) for a in tracks],
         }
 
-        return resSearch
+        return res_search
 
     def search2(
         self,
         query,
-        artistCount,
-        artistOffset,
-        albumCount,
-        albumOffset,
-        songCount,
-        songOffset,
+        artist_count,
+        artist_offset,
+        album_count,
+        album_offset,
+        song_count,
+        song_offset,
     ):
-        artists = self.ArtistDBHelper.getAllArtists(filterName=query)
-        if artistCount * artistOffset >= len(artists):
+        artists = self.ArtistDBHelper.get_all_artists(filter_name=query)
+        if artist_count * artist_offset >= len(artists):
             artists = []
         else:
             artists = artists[
-                artistCount
-                * artistOffset : min(
-                    len(artists), artistCount * artistOffset + artistCount
+                artist_count
+                * artist_offset : min(
+                    len(artists), artist_count * artist_offset + artist_count
                 )
             ]
 
-        albums = self.AlbumDBHelper.getAllAlbums(filterName=query)
-        if albumCount * albumOffset >= len(albums):
+        albums = self.AlbumDBHelper.get_all_albums(filter_name=query)
+        if album_count * album_offset >= len(albums):
             albums = []
         else:
             albums = albums[
-                albumCount
-                * albumOffset : min(len(albums), albumCount * albumOffset + albumCount)
+                album_count
+                * album_offset : min(
+                    len(albums), album_count * album_offset + album_count
+                )
             ]
 
-        tracks = self.TrackDBHelper.getAllTracks(filterTitle=query)
-        if songCount * songOffset >= len(tracks):
+        tracks = self.TrackDBHelper.get_all_tracks(filter_title=query)
+        if song_count * song_offset >= len(tracks):
             tracks = []
         else:
             tracks = tracks[
-                songCount
-                * songOffset : min(len(tracks), songCount * songOffset + songCount)
+                song_count
+                * song_offset : min(len(tracks), song_count * song_offset + song_count)
             ]
 
-        return self.__class__.getOpenSubsonicFormat(artists, albums, tracks)
+        return self.__class__.get_open_subsonic_format(artists, albums, tracks)
 
     def search3(
         self,
         query,
-        artistCount,
-        artistOffset,
-        albumCount,
-        albumOffset,
-        songCount,
-        songOffset,
+        artist_count,
+        artist_offset,
+        album_count,
+        album_offset,
+        song_count,
+        song_offset,
     ):
         if query != "":
             return self.search2(
                 query,
-                artistCount,
-                artistOffset,
-                albumCount,
-                albumOffset,
-                songCount,
-                songOffset,
+                artist_count,
+                artist_offset,
+                album_count,
+                album_offset,
+                song_count,
+                song_offset,
             )
-        artists = self.ArtistDBHelper.getAllArtists()
-        albums = self.AlbumDBHelper.getAllAlbums()
-        tracks = self.TrackDBHelper.getAllTracks()
+        artists = self.ArtistDBHelper.get_all_artists()
+        albums = self.AlbumDBHelper.get_all_albums()
+        tracks = self.TrackDBHelper.get_all_tracks()
 
-        return self.__class__.getOpenSubsonicFormat(artists, albums, tracks)
+        return self.__class__.get_open_subsonic_format(artists, albums, tracks)
+
+
+class IndexService:
+    def __init__(self, session: Session):
+        self.ArtistDBHelper = db_helpers.ArtistDBHelper(session)
+        self.TrackDBHelper = db_helpers.TrackDBHelper(session)
+
+    @dataclass
+    class ArtistIndex:
+        name: str
+        artist: List[db.Artist]
+
+        def get_open_subsonic_format(self):
+            return {
+                "name": self.name,
+                "artist": [
+                    ArtistService.get_open_subsonic_format(a) for a in self.artist
+                ],
+            }
+
+    def get_indexes_artists(
+        self,
+        music_folder_id: str = "",
+        if_modified_since_ms: int = 0,
+        with_childs: bool = False,
+    ) -> Dict[str, List[Dict]]:
+        artists: List[db.Artist] = list(self.ArtistDBHelper.get_all_artists())
+        artists.sort(key=lambda a: a.name)
+        index: List[IndexService.ArtistIndex] = []
+        letter: str = ""
+        letter_artists: List[db.Artist] = []
+        for a in artists:
+            if len(a.name) > 0 and a.name[0] != letter:
+                if len(letter_artists) > 0:
+                    index.append(IndexService.ArtistIndex(letter, letter_artists))
+                letter = a.name[0]
+                letter_artists = []
+            letter_artists.append(a)
+        res = {
+            "index": [indexArtist.get_open_subsonic_format() for indexArtist in index]
+        }
+        if with_childs:
+            tracks: List[str] = []
+            for a in artists:
+                ts: List[db.Track] = self.TrackDBHelper.get_track_by_id(a.id)
+                for t in ts:
+                    tracks.append(TrackService.get_open_subsonic_format(t))
+            res["child"] = tracks
+        return res

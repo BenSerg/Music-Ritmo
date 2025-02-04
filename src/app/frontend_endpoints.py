@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException
-import python_avatars as pa
+import python_avatars as pa  # type: ignore
 import base64
 
 frontend_router = APIRouter()
+
 
 @frontend_router.get("/generate_avatar/")
 def generate_random_avatar():
@@ -13,4 +14,6 @@ def generate_random_avatar():
 
         return {"avatar_base64": base64_avatar}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating avatar: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error generating avatar: {str(e)}"
+        )

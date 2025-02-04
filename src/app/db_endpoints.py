@@ -17,7 +17,7 @@ def add_user(user: db.User, session: Session = Depends(db.get_session)):
 @router.delete("/users/{user_id}")
 def delete_user(user_id: int, session: Session = Depends(db.get_session)):
     user = session.exec(select(db.User).where(db.User.id == user_id)).first()
-    if user == None:
+    if user is None:
         raise HTTPException(status_code=400, detail="Invalid user id")
 
     session.delete(user)
@@ -41,16 +41,20 @@ def add_tag(tag: db.Tag, session: Session = Depends(db.get_session)):
 
 
 @router.post("/users/{user_id}/favourite/tracks/{track_id}")
-def add_favourite_track(user_id: int, track_id: int, session: Session = Depends(db.get_session)):
+def add_favourite_track(
+    user_id: int, track_id: int, session: Session = Depends(db.get_session)
+):
     user = session.exec(select(db.User).where(db.User.id == user_id)).first()
-    if user == None:
+    if user is None:
         raise HTTPException(status_code=400, detail="Invalid user id")
 
     track = session.exec(select(db.Track).where(db.Track.id == track_id)).first()
-    if track == None:
+    if track is None:
         raise HTTPException(status_code=400, detail="Invalid track id")
 
-    favourite_track = db.FavouriteTrack(user_id=user_id, track_id=track_id, added_at=datetime.now())
+    favourite_track = db.FavouriteTrack(
+        user_id=user_id, track_id=track_id, added_at=datetime.now()
+    )
 
     session.add(favourite_track)
     session.commit()
@@ -59,11 +63,16 @@ def add_favourite_track(user_id: int, track_id: int, session: Session = Depends(
 
 
 @router.delete("/users/{user_id}/favourite/tracks/{track_id}")
-def delete_favourite_track(user_id: int, track_id: int, session: Session = Depends(db.get_session)):
-    favourite_track = session.exec(select(db.FavouriteTrack).where(
-        db.FavouriteTrack.user_id == user_id and db.FavouriteTrack.track_id == track_id
-    )).first()
-    if favourite_track == None:
+def delete_favourite_track(
+    user_id: int, track_id: int, session: Session = Depends(db.get_session)
+):
+    favourite_track = session.exec(
+        select(db.FavouriteTrack).where(
+            db.FavouriteTrack.user_id == user_id
+            and db.FavouriteTrack.track_id == track_id
+        )
+    ).first()
+    if favourite_track is None:
         raise HTTPException(status_code=400)
 
     session.delete(favourite_track)
