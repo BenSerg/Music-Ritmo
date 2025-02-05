@@ -43,7 +43,7 @@ class AlbumService:
             tracks = []
             for album_track in album.tracks:
                 tracks.append(TrackService.get_open_subsonic_format(album_track))
-            res_album["song"] = tracks  # Здесь tracks - это список
+            res_album["song"] = tracks
         return res_album
 
     def get_album_by_id(self, id):
@@ -362,7 +362,7 @@ class IndexService:
         if with_childs:
             tracks: List[str] = []
             for a in artists:
-                ts: List[db.Track] = self.TrackDBHelper.get_track_by_id(a.id)
+                ts: List[db.Track] = self.TrackDBHelper.get_track_by_artist_id(a.id)
                 for t in ts:
                     tracks.append(TrackService.get_open_subsonic_format(t))
             res["child"] = tracks
