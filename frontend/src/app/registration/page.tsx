@@ -75,7 +75,7 @@ export default function Registration() {
       if (data["subsonic-response"]?.status === "ok") {
         setSuccessMessage("Вы успешно зарегистрированы!");
         setTimeout(() => {
-          router.push("/");
+          router.push("/login");
         }, 2000);
       } else {
         setErrorMessage("Ошибка при регистрации. Попробуйте снова.");
@@ -138,9 +138,7 @@ export default function Registration() {
                   !password
               )}
               onClick={handleSubmit}
-            >
-              {loading ? "Загружается..." : "Зарегистрироваться"}
-            </Button>
+            ></Button>
           </div>
         </Container>
       </div>

@@ -44,7 +44,7 @@ export const SearchPanel = () => {
     if (query.length > 0) {
       try {
         const response = await fetch(
-          `http://localhost:8000/rest/search3?query=${query}&songCount=20&albumCount=20&artistCount=20&songOffset=0&albumOffset=0&artistOffset=0`
+          `http://localhost:8000/rest/search3?query=${query}`
         );
         const data = await response.json();
 

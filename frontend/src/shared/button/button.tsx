@@ -36,7 +36,7 @@ export const Button: React.FC<ButtonProps> = ({
 
     setTimeout(() => {
       setIsDisabled(false);
-    }, 3000);
+    }, 500);
   };
 
   const buttonClassName = classNames(className, styles[type], styles[color]);

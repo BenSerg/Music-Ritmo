@@ -3,6 +3,7 @@
 import { Container } from "@/shared/container";
 import React, { useState, useEffect } from "react";
 import { Tracklist } from "@/widgets/track-list";
+import { useAuth } from "@/app/auth-context";
 import styles from "./favourite-track.module.css";
 
 interface Track {
@@ -19,10 +20,13 @@ interface Track {
 
 export default function FavouriteTrack() {
   const [starredTracks, setStarredTracks] = useState<Track[]>([]);
+  const { user, password } = useAuth();
 
   const fetchStarredTracks = async () => {
     try {
-      const response = await fetch("http://localhost:8000/rest/getStarred2");
+      const response = await fetch(
+        `http://localhost:8000/rest/getStarred2?username=${user}&u=${user}&p=${password}`
+      );
 
       if (!response.ok) {
         throw new Error(`Ошибка при запросе: ${response.status}`);

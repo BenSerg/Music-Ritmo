@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Container } from "@/shared/container";
 import { Input } from "@/shared/input";
 import { Button } from "@/shared/button";
+import { useAuth } from "@/app/auth-context";
 import styles from "./create_playlist.module.css";
 
 interface Playlist {
@@ -20,6 +21,7 @@ interface Playlist {
 
 export default function CreatePlaylist() {
   const router = useRouter();
+  const { user, password } = useAuth();
   const [playlistName, setPlaylistName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +69,9 @@ export default function CreatePlaylist() {
       const response = await fetch(
         `http://localhost:8000/rest/createPlaylist?name=${encodeURIComponent(
           playlistName
-        )}&u=${encodeURIComponent(userLogin)}`,
+        )}&u=${encodeURIComponent(
+          userLogin
+        )}?username=${user}&u=${user}&p=${password}`,
         {
           method: "GET",
         }
