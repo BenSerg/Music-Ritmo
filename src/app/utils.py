@@ -1,8 +1,9 @@
+from typing import cast
 from PIL import Image
 from io import BytesIO
 
 from enum import Enum
-from mutagen.id3 import TextFrame, TIT2, TPE1, TPE2, TALB, TCON, TRCK, TDRC
+from mutagen.id3 import TXXX, TIT2, TPE1, TPE2, TALB, TCON, TRCK, TDRC
 from mutagen.mp3 import MP3
 from mutagen.flac import FLAC
 from sqlmodel import Session, select, delete
@@ -20,7 +21,7 @@ class AudioType(Enum):
 
 
 def bytes_to_image(image_bytes: bytes) -> Image.Image:
-    return Image.open(BytesIO(image_bytes))
+    return cast(Image.Image, Image.open(BytesIO(image_bytes)))
 
 
 def image_to_bytes(image: Image.Image) -> bytes:
@@ -33,18 +34,18 @@ def get_default_cover():
     return Image.open(DEFAULT_COVER_PATH)
 
 
-def get_cover_preview(image_bytes: bytes | None) -> tuple[bytes | None, str]:
+def get_cover_preview(image_bytes: bytes | None) -> tuple[bytes, str]:
     if image_bytes is None:
-        image = Image.open(DEFAULT_COVER_PREVIEW_PATH)
-        return image_to_bytes(image), image.format.lower()
+        default_image = Image.open(DEFAULT_COVER_PREVIEW_PATH)
+        return image_to_bytes(default_image), (default_image.format or "").lower()
 
     image = bytes_to_image(image_bytes)
     width, height = image.size
     if width <= MAX_COVER_PREVIEW_SIZE and height <= MAX_COVER_PREVIEW_SIZE:
-        return image_bytes, image.format.lower()
+        return image_bytes, (image.format or "").lower()
 
     image.thumbnail((MAX_COVER_PREVIEW_SIZE, MAX_COVER_PREVIEW_SIZE))
-    return image_to_bytes(image), image.format.lower()
+    return image_to_bytes(image), (image.format or "").lower()
 
 
 def get_cover_from_mp3(audio_file_mp3: MP3) -> bytes | None:
@@ -75,6 +76,8 @@ def get_audio_object(track: db.Track) -> tuple[MP3 | FLAC, AudioType]:
             return MP3(track.file_path), AudioType.MP3
         case "audio/flac":
             return FLAC(track.file_path), AudioType.FLAC
+        case _:
+            assert False, f"Unexpected track type: {track.type}"
 
 
 def update_tags(
@@ -110,7 +113,7 @@ def update_tags(
                                 db.Artist.id == track.album_artist_id
                             )
                         )
-                        .one_or_none()
+                        .one()
                         .name
                     )
 
@@ -154,6 +157,25 @@ def update_tags(
                         case AudioType.FLAC:
                             audio["GENRE"] = genres
 
+            case _:
+                found = False
+                should_update = False
+                for tag in track.tags:
+                    if tag.name == key:
+                        found = True
+                        tag.updated = True
+                        if tag.value != value:
+                            should_update = True
+                            break
+
+                if not found or should_update:
+                    match audio_type:
+                        case AudioType.MP3:
+                            audio["TXXX:" + key] = TXXX(desc=key, text=value)
+                        case AudioType.FLAC:
+                            audio["TXXX:" + key] = value
+
+    audio.save()
     return audio, audio_type
 
 
@@ -161,15 +183,72 @@ def create_default_user():
     service_layer.create_user(next(db.get_session()), "admin", "admin")
 
 
-def clear_media(session: Session):
-    session.exec(delete(db.Artist))
-    session.exec(delete(db.Album))
-    session.exec(delete(db.Playlist))
-    session.exec(delete(db.Genre))
-    session.exec(delete(db.Track))
+def clear_table(table, session: Session):
+    for row in session.exec(select(table)).all():
+        session.delete(row)
 
-    session.exec(delete(db.GenreTrack))
-    session.exec(delete(db.ArtistTrack))
-    session.exec(delete(db.ArtistAlbum))
-    session.exec(delete(db.PlaylistTrack))
+
+def clear_media(session: Session):
+    clear_table(db.Album, session)
+    clear_table(db.Playlist, session)
+    clear_table(db.Genre, session)
+    clear_table(db.Tag, session)
+    clear_table(db.Track, session)
+
+    clear_table(db.GenreTrack, session)
+    clear_table(db.ArtistTrack, session)
+    clear_table(db.ArtistAlbum, session)
+    clear_table(db.PlaylistTrack, session)
     session.commit()
+
+
+def get_custom_tags_mp3(audio_file: MP3):
+    custom_tags: list[tuple] = []
+    if audio_file.tags:
+        for tag in audio_file.tags:
+            if tag.startswith("TXXX:"):
+                custom_tags.append((audio_file[tag].desc, audio_file[tag].text[0]))
+    return custom_tags
+
+
+def get_custom_tags_flac(audio_file: FLAC):
+    custom_tags: list[tuple] = []
+    if audio_file.tags:
+        for key, value in audio_file.tags:
+            if key.startswith("TXXX:"):
+                custom_tags.append((key.split(":")[-1], value))
+    return custom_tags
+
+
+def clear_outdated_tags(track: db.Track, audio: MP3 | FLAC):
+    for tag in track.tags:
+        if tag.updated == False:
+            audio.pop("TXXX:" + tag.name)
+    audio.save()
+
+
+def get_base_tags(track: db.Track, session: Session):
+    album_artist = ""
+    if track.album_artist_id is not None:
+        album_artist = (
+            session.exec(select(db.Artist).where(db.Artist.id == track.album_artist_id))
+            .one()
+            .name
+        )
+
+    return {
+        "title": track.title,
+        "artists": ", ".join(artist.name for artist in track.artists),
+        "album_artist": album_artist,
+        "album": track.album.name,
+        "album_position": track.album_position,
+        "year": track.year,
+        "genres": ", ".join(genre.name for genre in track.genres),
+    }
+
+
+def get_custom_tags(track: db.Track):
+    custom_tags = {}
+    for tag in track.tags:
+        custom_tags[tag.name] = tag.value
+    return custom_tags

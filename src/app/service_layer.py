@@ -269,8 +269,8 @@ class ArtistService:
     @staticmethod
     def get_open_subsonic_format(
         artist: db.Artist, with_albums: bool = False, with_tracks: bool = False
-    ) -> dict[str, Optional[Union[str, int, List[dict]]]]:
-        res_artist: dict[str, Optional[Union[str, int, List[dict]]]] = {
+    ) -> dict[str, object]:
+        res_artist: dict[str, object] = {
             "id": artist.id,
             "name": artist.name,
             "coverArt": f"ar-{artist.id}",
@@ -280,13 +280,13 @@ class ArtistService:
             min(a.added_at for a in artist.artist_favourites)
         if with_albums:
             albums = []
-            for i in artist.albums:
-                albums.append(AlbumService.get_open_subsonic_format(i))
+            for album in artist.albums:
+                albums.append(AlbumService.get_open_subsonic_format(album))
             res_artist["album"] = albums
         if with_tracks:
             tracks = []
-            for i in artist.tracks:
-                tracks.append(TrackService.get_open_subsonic_format(i))
+            for track in artist.tracks:
+                tracks.append(TrackService.get_open_subsonic_format(track))
             res_artist["song"] = tracks
         return res_artist
 

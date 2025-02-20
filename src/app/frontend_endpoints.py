@@ -54,24 +54,8 @@ def get_tags(id: int, session: Session = Depends(db.get_session)):
     if track is None:
         return JSONResponse({"detail": "No such id"}, status_code=404)
 
-    album_artist = ""
-    if track.album_artist_id is not None:
-        album_artist = (
-            session.exec(select(db.Artist).where(db.Artist.id == track.album_artist_id))
-            .one_or_none()
-            .name
-        )
-
     return JSONResponse(
-        {
-            "title": track.title,
-            "artists": ", ".join(artist.name for artist in track.artists),
-            "album_artist": album_artist,
-            "album": track.album.name,
-            "album_position": track.album_position,
-            "year": track.year,
-            "genres": ", ".join(genre.name for genre in track.genres),
-        }
+        utils.get_base_tags(track, session) | utils.get_custom_tags(track)
     )
 
 
@@ -84,7 +68,7 @@ def update_tags(
         return JSONResponse({"detail": "No such id"}, status_code=404)
 
     audio, audio_type = utils.update_tags(track, data.items(), session)
-    audio.save()
+    utils.clear_outdated_tags(track, audio)
 
     audio_info: db_loading.AudioInfo
     match audio_type:

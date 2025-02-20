@@ -17,32 +17,32 @@ def get_session():
 # Таблицы связи "многие к многим"
 class GenreTrack(SQLModel, table=True):
     __tablename__ = "Genre_Tracks"
-    genre_id: int = Field(default=None, primary_key=True, foreign_key="Genres.id")
-    track_id: int = Field(default=None, primary_key=True, foreign_key="Tracks.id")
+    genre_id: int = Field(primary_key=True, foreign_key="Genres.id")
+    track_id: int = Field(primary_key=True, foreign_key="Tracks.id")
 
 
 class ArtistTrack(SQLModel, table=True):
     __tablename__ = "Artist_Tracks"
-    artist_id: int = Field(default=None, primary_key=True, foreign_key="Artists.id")
-    track_id: int = Field(default=None, primary_key=True, foreign_key="Tracks.id")
+    artist_id: int = Field(primary_key=True, foreign_key="Artists.id")
+    track_id: int = Field(primary_key=True, foreign_key="Tracks.id")
 
 
 class ArtistAlbum(SQLModel, table=True):
     __tablename__ = "Artist_Albums"
-    artist_id: int = Field(default=None, primary_key=True, foreign_key="Artists.id")
-    album_id: int = Field(default=None, primary_key=True, foreign_key="Albums.id")
+    artist_id: int = Field(primary_key=True, foreign_key="Artists.id")
+    album_id: int = Field(primary_key=True, foreign_key="Albums.id")
 
 
 class TagTrack(SQLModel, table=True):
     __tablename__ = "Tag_Tracks"
-    tag_id: int = Field(default=None, primary_key=True, foreign_key="Tags.id")
-    track_id: int = Field(default=None, primary_key=True, foreign_key="Tracks.id")
+    tag_id: int = Field(primary_key=True, foreign_key="Tags.id")
+    track_id: int = Field(primary_key=True, foreign_key="Tracks.id")
 
 
 class PlaylistTrack(SQLModel, table=True):
     __tablename__ = "Playlist_Tracks"
-    playlist_id: int = Field(default=None, primary_key=True, foreign_key="Playlists.id")
-    track_id: int = Field(default=None, primary_key=True, foreign_key="Tracks.id")
+    playlist_id: int = Field(primary_key=True, foreign_key="Playlists.id")
+    track_id: int = Field(primary_key=True, foreign_key="Tracks.id")
     added_at: str
 
     playlist: "Playlist" = Relationship(back_populates="playlist_tracks")
@@ -51,8 +51,8 @@ class PlaylistTrack(SQLModel, table=True):
 
 class FavouriteTrack(SQLModel, table=True):
     __tablename__ = "Favourite_Tracks"
-    user_id: int = Field(default=None, primary_key=True, foreign_key="Users.id")
-    track_id: int = Field(default=None, primary_key=True, foreign_key="Tracks.id")
+    user_id: int = Field(primary_key=True, foreign_key="Users.id")
+    track_id: int = Field(primary_key=True, foreign_key="Tracks.id")
     added_at: str
 
     user: "User" = Relationship(back_populates="favourite_tracks")
@@ -61,8 +61,8 @@ class FavouriteTrack(SQLModel, table=True):
 
 class FavouriteAlbum(SQLModel, table=True):
     __tablename__ = "Favourite_Albums"
-    user_id: int = Field(default=None, primary_key=True, foreign_key="Users.id")
-    album_id: int = Field(default=None, primary_key=True, foreign_key="Albums.id")
+    user_id: int = Field(primary_key=True, foreign_key="Users.id")
+    album_id: int = Field(primary_key=True, foreign_key="Albums.id")
     added_at: str
 
     user: "User" = Relationship(back_populates="favourite_albums")
@@ -71,8 +71,8 @@ class FavouriteAlbum(SQLModel, table=True):
 
 class FavouritePlaylist(SQLModel, table=True):
     __tablename__ = "Favourite_Playlists"
-    user_id: int = Field(default=None, primary_key=True, foreign_key="Users.id")
-    playlist_id: int = Field(default=None, primary_key=True, foreign_key="Playlists.id")
+    user_id: int = Field(primary_key=True, foreign_key="Users.id")
+    playlist_id: int = Field(primary_key=True, foreign_key="Playlists.id")
     added_at: str
 
     user: "User" = Relationship(back_populates="favourite_playlists")
@@ -81,8 +81,8 @@ class FavouritePlaylist(SQLModel, table=True):
 
 class FavouriteArtist(SQLModel, table=True):
     __tablename__ = "Favourite_Artists"
-    user_id: int = Field(default=None, primary_key=True, foreign_key="Users.id")
-    artist_id: int = Field(default=None, primary_key=True, foreign_key="Artists.id")
+    user_id: int = Field(primary_key=True, foreign_key="Users.id")
+    artist_id: int = Field(primary_key=True, foreign_key="Artists.id")
     added_at: str
 
     user: "User" = Relationship(back_populates="favourite_artists")
@@ -92,7 +92,7 @@ class FavouriteArtist(SQLModel, table=True):
 # Основные таблицы
 class User(SQLModel, table=True):
     __tablename__ = "Users"
-    id: int | None = Field(default=None, primary_key=True)
+    id: int = Field(primary_key=True)
     login: str
     password: str
     avatar: str
@@ -106,18 +106,19 @@ class User(SQLModel, table=True):
 
 class Track(SQLModel, table=True):
     __tablename__ = "Tracks"
-    id: int | None = Field(default=None, primary_key=True)
+    id: int = Field(primary_key=True)
     file_path: str
     file_size: int
     type: str
     title: str = Field(index=True)
     album_id: int | None = Field(foreign_key="Albums.id")
-    album_artist_id: int | None
+    album_artist_id: int | None = Field(foreign_key="Artists.id")
     album_position: int | None
     year: str | None
     plays_count: int
     cover: bytes
     cover_type: str
+    lyrics: str | None
 
     bit_rate: int
     bits_per_sample: int
@@ -137,7 +138,7 @@ class Track(SQLModel, table=True):
 
 class Artist(SQLModel, table=True):
     __tablename__ = "Artists"
-    id: int | None = Field(default=None, primary_key=True)
+    id: int = Field(primary_key=True)
     name: str = Field(index=True)
 
     tracks: list["Track"] = Relationship(
@@ -154,9 +155,9 @@ class Artist(SQLModel, table=True):
 
 class Album(SQLModel, table=True):
     __tablename__ = "Albums"
-    id: int | None = Field(default=None, primary_key=True)
+    id: int = Field(primary_key=True)
     name: str = Field(index=True)
-    album_artist_id: int | None
+    album_artist_id: int | None = Field(foreign_key="Artists.id")
     total_tracks: int
     year: str | None
     cover: bytes | None
@@ -170,7 +171,7 @@ class Album(SQLModel, table=True):
 
 class Playlist(SQLModel, table=True):
     __tablename__ = "Playlists"
-    id: int | None = Field(default=None, primary_key=True)
+    id: int = Field(primary_key=True)
     name: str = Field(index=True)
     user_id: int = Field(foreign_key="Users.id")
     total_tracks: int
@@ -187,7 +188,7 @@ class Playlist(SQLModel, table=True):
 
 class Genre(SQLModel, table=True):
     __tablename__ = "Genres"
-    id: int | None = Field(default=None, primary_key=True)
+    id: int = Field(primary_key=True)
     name: str = Field(index=True)
 
     tracks: list["Track"] = Relationship(back_populates="genres", link_model=GenreTrack)
@@ -198,7 +199,9 @@ class Genre(SQLModel, table=True):
 
 class Tag(SQLModel, table=True):
     __tablename__ = "Tags"
-    id: int | None = Field(default=None, primary_key=True)
+    id: int = Field(primary_key=True)
     name: str = Field(index=True)
+    value: str
+    updated: bool
 
     tracks: list["Track"] = Relationship(back_populates="tags", link_model=TagTrack)

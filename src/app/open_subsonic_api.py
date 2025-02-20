@@ -635,7 +635,9 @@ def get_cover_art(
         image.thumbnail((size, size))
         image_bytes = utils.image_to_bytes(image)
 
-    return Response(content=image_bytes, media_type=f"image/{image.format.lower()}")
+    return Response(
+        content=image_bytes, media_type=f"image/{(image.format or "").lower()}"
+    )
 
 
 @open_subsonic_router.get("/getAvatar")

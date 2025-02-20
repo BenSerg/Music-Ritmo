@@ -118,7 +118,7 @@ class TrackDBHelper:
             .where(db.Artist.id == db.ArtistTrack.artist_id)
             .where(db.ArtistTrack.track_id == track_id)
             .limit(1)
-        ).first()
+        ).one()
 
 
 class GenresDBHelper:
