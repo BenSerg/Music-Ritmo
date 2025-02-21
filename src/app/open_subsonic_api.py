@@ -584,6 +584,27 @@ def get_music_folders():
     return rsp.to_json_rsp()
 
 
+@open_subsonic_router.get("/getLyricsBySongId")
+def get_lyrics_by_song_id(id: int, session: Session = Depends(db.get_session)):
+    service = service_layer.TrackService(session)
+    lyrics_list = service.extract_lyrics(id)
+    if lyrics_list is None:
+        return JSONResponse({"detail": "No such a song"}, status_code=404)
+    lyrics_res = []
+    for lyrics in lyrics_list:
+        lyrics_res.append(
+            {
+                "lang": lyrics.get("lang", "xxx"),
+                "offset": 0,
+                "synced": False,
+                "line": [{"value": i} for i in lyrics.get("text")],
+            }
+        )
+    rsp = SubsonicResponse()
+    rsp.data["lyricsList"] = {"structuredLyrics": lyrics_res}
+    return rsp.to_json_rsp()
+
+
 @open_subsonic_router.get("/getCoverArt")
 def get_cover_art(
     id: str, size: int | None = None, session: Session = Depends(db.get_session)

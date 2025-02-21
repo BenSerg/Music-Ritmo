@@ -5,9 +5,11 @@ from dataclasses import dataclass
 from typing import List, Optional, Dict, Tuple, Union, Any
 
 from sqlmodel import Session, select
+from mutagen.id3 import USLT
 
 from . import database as db
 from . import db_helpers
+from .utils import get_audio_object, AudioType
 
 
 def parse_val(rsp: dict, attr: str, val: Any) -> None:
@@ -231,6 +233,24 @@ class TrackService:
             self.get_open_subsonic_format(track, with_genres=False, with_artists=False)
             for track in random_tracks
         ]
+
+    def extract_lyrics(self, id):
+        track = self.DBHelper.get_track_by_id(id)
+        if track:
+            audio, audio_type = get_audio_object(track)
+            match audio_type:
+                case AudioType.MP3:
+                    return [
+                        {"text": audio[tag].text.splitlines(), "lang": audio[tag].lang}
+                        for tag in audio
+                        if isinstance(audio[tag], USLT)
+                    ]
+                case AudioType.FLAC:
+                    return [
+                        {"text": t.splitlines() for t in audio.tags.get("lyrics", [])}
+                    ]
+        else:
+            return track
 
 
 class GenreService:
