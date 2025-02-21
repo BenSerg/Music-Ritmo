@@ -150,7 +150,11 @@ def extract_metadata_flac(file_path):
             if "TRACKNUMBER" in audio_file.tags
             else None
         ),
-        year=int(str(audio_file["DATE"][0]).split('-')[0]) if "DATE" in audio_file.tags else None,
+        year=(
+            int(str(audio_file["DATE"][0]).split("-")[0])
+            if "DATE" in audio_file.tags
+            else None
+        ),
         cover=cover,
         cover_type=cover_type,
         bit_rate=audio_file.info.bitrate,
