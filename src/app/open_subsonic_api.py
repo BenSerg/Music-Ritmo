@@ -573,7 +573,9 @@ def get_album_list2(
 @open_subsonic_router.get("/getOpenSubsonicExtensions")
 def get_open_subsonic_extensions():
     rsp = SubsonicResponse()
-    rsp.data["openSubsonicExtensions"] = []
+    rsp.data["openSubsonicExtensions"] = [
+        {"name": "songLyrics", "versions": [1]},
+    ]
     return rsp.to_json_rsp()
 
 
