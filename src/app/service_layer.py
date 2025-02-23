@@ -234,7 +234,7 @@ class TrackService:
             for track in random_tracks
         ]
 
-    def extract_lyrics(self, id: int):
+    def extract_lyrics(self, id: int) -> Optional[List[Dict[str, Any]]]:
         track = self.DBHelper.get_track_by_id(id)
         if track:
             audio, audio_type = get_audio_object(track)
@@ -246,10 +246,12 @@ class TrackService:
                         if isinstance(audio[tag], USLT)
                     ]
                 case AudioType.FLAC:
-                    return [
-                        {"text": tag.splitlines()}
-                        for tag in audio.tags.get("lyrics", [])
-                    ]
+                    if audio.tags:
+                        return [
+                            {"text": tag.splitlines()}
+                            for tag in audio.tags.get("lyrics", [])
+                        ]
+                    return []
         else:
             return None
 

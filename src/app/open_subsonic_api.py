@@ -599,7 +599,7 @@ def get_lyrics_by_song_id(id: int, session: Session = Depends(db.get_session)):
                 "lang": lyrics.get("lang", "xxx"),
                 "offset": 0,
                 "synced": False,
-                "line": [{"value": i} for i in lyrics.get("text")],
+                "line": [{"value": i} for i in lyrics.get("text", [])],
             }
         )
     rsp = SubsonicResponse()
