@@ -234,7 +234,7 @@ class TrackService:
             for track in random_tracks
         ]
 
-    def extract_lyrics(self, id):
+    def extract_lyrics(self, id: int):
         track = self.DBHelper.get_track_by_id(id)
         if track:
             audio, audio_type = get_audio_object(track)
@@ -247,10 +247,11 @@ class TrackService:
                     ]
                 case AudioType.FLAC:
                     return [
-                        {"text": t.splitlines() for t in audio.tags.get("lyrics", [])}
+                        {"text": tag.splitlines()}
+                        for tag in audio.tags.get("lyrics", [])
                     ]
         else:
-            return track
+            return None
 
 
 class GenreService:
