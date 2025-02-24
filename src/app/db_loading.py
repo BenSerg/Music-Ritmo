@@ -7,8 +7,8 @@ from mutagen.flac import FLAC
 from mutagen.mp3 import MP3
 from sqlmodel import Session, select
 
-from . import database as db
-from . import utils
+from src.app import database as db
+from src.app import utils
 
 
 logger = logging.getLogger(__name__)
@@ -36,10 +36,6 @@ class AudioInfo:
     sample_rate: int
     channels: int
     duration: int
-
-    def __init__(self, file_path: str):
-        self.file_path = file_path
-        self.file_size = os.path.getsize(file_path)
 
 
 def extract_metadata_mp3(audio_file: MP3, audio_info: AudioInfo) -> None:
@@ -73,14 +69,6 @@ def extract_metadata_mp3(audio_file: MP3, audio_info: AudioInfo) -> None:
         utils.get_cover_from_mp3(audio_file)
     )
     audio_info.custom_tags = utils.get_custom_tags_mp3(audio_file)
-    audio_info.bit_rate = audio_file.info.bitrate
-    audio_info.bits_per_sample = int(
-        audio_file.info.bitrate
-        / (audio_file.info.sample_rate * audio_file.info.channels)
-    )
-    audio_info.sample_rate = audio_file.info.sample_rate
-    audio_info.channels = audio_file.info.channels
-    audio_info.duration = audio_file.info.length
 
 
 def extract_metadata_flac(audio_file: FLAC, audio_info: AudioInfo) -> None:
@@ -114,11 +102,6 @@ def extract_metadata_flac(audio_file: FLAC, audio_info: AudioInfo) -> None:
         utils.get_cover_from_flac(audio_file)
     )
     audio_info.custom_tags = utils.get_custom_tags_flac(audio_file)
-    audio_info.bit_rate = audio_file.info.bitrate
-    audio_info.bits_per_sample = audio_file.info.bits_per_sample
-    audio_info.sample_rate = audio_file.info.sample_rate
-    audio_info.channels = audio_file.info.channels
-    audio_info.duration = audio_file.info.length
 
 
 def scan_directory_for_audio_files(dir: str) -> list[AudioInfo]:
@@ -128,16 +111,34 @@ def scan_directory_for_audio_files(dir: str) -> list[AudioInfo]:
         for file in files:
             file_path = os.path.join(root, file)
             try:
-                audio_info = AudioInfo(file_path)
+                audio_info = AudioInfo()
+                audio_info.file_path = file_path
+                audio_info.file_size = os.path.getsize(file_path)
+
+                audio_file: MP3 | FLAC | None = None
 
                 if file.lower().endswith(".mp3"):
-                    extract_metadata_mp3(MP3(file_path), audio_info)
+                    audio_file = MP3(file_path)
+                    extract_metadata_mp3(audio_file, audio_info)
+                    audio_info.bits_per_sample = int(
+                        audio_file.info.bitrate
+                        / (audio_file.info.sample_rate * audio_file.info.channels)
+                    )
+
                     logger.info(f"Parsed mp3 file {file_path}")
                 elif file.lower().endswith(".flac"):
-                    extract_metadata_flac(FLAC(file_path), audio_info)
+                    audio_file = FLAC(file_path)
+                    extract_metadata_flac(audio_file, audio_info)
+                    audio_info.bits_per_sample = audio_file.info.bits_per_sample
+
                     logger.info(f"Parsed flac file {file_path}")
                 else:
                     raise Exception("Unsupported file")
+
+                audio_info.bit_rate = audio_file.info.bitrate
+                audio_info.sample_rate = audio_file.info.sample_rate
+                audio_info.channels = audio_file.info.channels
+                audio_info.duration = audio_file.info.length
 
                 data.append(audio_info)
 
