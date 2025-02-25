@@ -1,12 +1,13 @@
 import { Logo } from "@/shared/logo";
 import Link from "next/link";
+import React from "react";
 import { User } from "@/entities/user";
 
 import styles from "./header.module.css";
 
 export const Header = () => {
   return (
-    <div className={styles.header}>
+    <div className={styles.header} data-testid="header">
       <div className={styles.header__logo}>
         <Logo type="normal" />
       </div>

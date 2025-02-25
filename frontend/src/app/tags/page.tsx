@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Container } from "@/shared/container";
 import { Button } from "@/shared/button";
 import styles from "./tags.module.css";

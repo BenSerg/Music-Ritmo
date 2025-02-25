@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/shared/button";
+import Image from "next/image";
 import styles from "./playlist.module.css";
+import Link from "next/link";
 
 interface PlaylistProps {
   name: string;
@@ -13,7 +15,7 @@ interface PlaylistProps {
 
 export const Playlist = ({
   name,
-  link,
+  link = "/",
   showDelete,
   playlist_id,
   onDelete,
@@ -85,23 +87,31 @@ export const Playlist = ({
 
   return (
     <div>
-      <div className={styles.playlist} style={{ backgroundColor: randomColor }}>
+      <div
+        className={styles.playlist}
+        style={{ backgroundColor: randomColor }}
+        data-testid="playlist"
+      >
         {image && (
-          <img
+          <Image
             src={image}
             alt={`${name} cover`}
+            width={150}
+            height={150}
+            role="img"
             className={styles.playlist__cover}
           />
         )}
         {showDelete && (
           <i
+            role="button"
             className={`fa-regular fa-trash-can ${styles.deleteIcon}`}
             onClick={handleDeleteClick}
           ></i>
         )}
-        <a href={link}>
+        <Link href={link} role="link" data-testid="playlist-link">
           <div className={styles.playlist__name}>{name}</div>
-        </a>
+        </Link>
       </div>
 
       {showModal && (

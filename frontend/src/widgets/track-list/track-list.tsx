@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import styles from "./track-list.module.css";
 
@@ -49,10 +49,11 @@ export const Tracklist = ({
   };
 
   return (
-    <div className={styles.playlist}>
+    <div className={styles.playlist} data-testid="tracklist">
       <div
         className={styles.playlist__avatar}
         style={{ backgroundColor: randomColor }}
+        data-testid="tracklist-avatar"
       ></div>
 
       <div className={styles.playlist__details}>
@@ -66,7 +67,11 @@ export const Tracklist = ({
           </Link>
         </div>
 
-        <div className={styles.playlist__favourite} onClick={onFavouriteToggle}>
+        <div
+          className={styles.playlist__favourite}
+          onClick={onFavouriteToggle}
+          data-testid="favourite-icon"
+        >
           {favourite ? (
             <i className="fa-solid fa-star"></i>
           ) : (
@@ -77,8 +82,12 @@ export const Tracklist = ({
         <div className={styles.playlist__time}>{formatTime(time)}</div>
 
         {showRemoveButton && onRemove && (
-          <div className={styles.playlist__remove} onClick={onRemove}>
-            <i className="fa-solid fa-xmark"></i>
+          <div
+            className={styles.playlist__remove}
+            onClick={onRemove}
+            data-testid="remove-button"
+          >
+            <i className="fa-solid fa-xmark" data-testid="favourite-button"></i>
           </div>
         )}
       </div>
