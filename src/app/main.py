@@ -6,7 +6,7 @@ from .open_subsonic_api import open_subsonic_router
 from .db_loading import scan_and_load
 from .frontend_endpoints import frontend_router
 from .database import init_db
-from .utils import create_default_user
+from .service_layer import create_default_user
 
 app = FastAPI()
 

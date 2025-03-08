@@ -112,7 +112,7 @@ class Track(SQLModel, table=True):
     file_size: int
     type: str
     title: str = Field(index=True)
-    album_id: int | None = Field(foreign_key="Albums.id")
+    album_id: int = Field(foreign_key="Albums.id")
     album_artist_id: int | None = Field(foreign_key="Artists.id")
     album_position: int | None
     year: str | None

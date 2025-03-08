@@ -1,3 +1,4 @@
+import re
 from typing import Any, cast
 from PIL import Image
 from io import BytesIO
@@ -7,8 +8,10 @@ from mutagen.id3 import TXXX, TIT2, TPE1, TPE2, TALB, TCON, TRCK, TDRC  # type: 
 from mutagen.mp3 import MP3
 from mutagen.flac import FLAC
 from sqlmodel import Session, select
-from . import service_layer
-from . import database as db
+
+from src.app import database as db
+
+TAG_MULTIPLE_PATTERN = r"[;,\\]\s*"
 
 MAX_COVER_PREVIEW_SIZE = 128
 DEFAULT_COVER_PREVIEW_PATH = "./resources/default_cover_preview.jpg"
@@ -80,113 +83,119 @@ def get_audio_object(track: db.Track) -> tuple[MP3 | FLAC, AudioType]:
             assert False, f"Unexpected track type: {track.type}"
 
 
-def update_tags(
-    track: db.Track, tags: dict[str, Any], session: Session
-) -> tuple[MP3 | FLAC, AudioType]:
+def popTag(
+    audio: MP3 | FLAC, audio_type: AudioType, tag_names: dict[AudioType, str]
+) -> None:
+    if tag_names[audio_type] in (audio.tags or []):
+        audio.pop(tag_names[audio_type])
+
+
+def update_tags(track: db.Track, tags: dict[str, Any]) -> tuple[MP3 | FLAC, AudioType]:
     audio, audio_type = get_audio_object(track)
 
     for key, value in tags.items():
-        value = str(value)
+        valueStr = str(value)
         match key:
             case "title":
-                if value != track.title:
-                    match audio_type:
-                        case AudioType.MP3:
-                            audio["TIT2"] = TIT2(text=[value])  # type: ignore[no-untyped-call]
-                        case AudioType.FLAC:
-                            audio["TITLE"] = value
+                match audio_type:
+                    case AudioType.MP3:
+                        audio["TIT2"] = TIT2(text=[valueStr])  # type: ignore[no-untyped-call]
+                    case AudioType.FLAC:
+                        audio["TITLE"] = valueStr
 
             case "artists":
-                artists = value.split(", ")
-                if set(artists) != set(track.artists):
-                    match audio_type:
-                        case AudioType.MP3:
-                            audio["TPE1"] = TPE1(text=[value])  # type: ignore[no-untyped-call]
-                        case AudioType.FLAC:
-                            audio["ARTIST"] = artists
+                match audio_type:
+                    case AudioType.MP3:
+                        audio["TPE1"] = TPE1(text=[valueStr])  # type: ignore[no-untyped-call]
+                    case AudioType.FLAC:
+                        audio["ARTIST"] = re.split(TAG_MULTIPLE_PATTERN, valueStr)
 
             case "album_artist":
-                album_artist = ""
-                if track.album_artist_id is not None:
-                    album_artist = (
-                        session.exec(
-                            select(db.Artist).where(
-                                db.Artist.id == track.album_artist_id
-                            )
-                        )
-                        .one()
-                        .name
+                if value is None:
+                    popTag(
+                        audio,
+                        audio_type,
+                        {AudioType.MP3: "TPE2", AudioType.FLAC: "ALBUMARTIST"},
                     )
+                    continue
 
-                if value != album_artist:
-                    match audio_type:
-                        case AudioType.MP3:
-                            audio["TPE2"] = TPE2(text=[value])  # type: ignore[no-untyped-call]
-                        case AudioType.FLAC:
-                            audio["ALBUMARTIST"] = value
+                match audio_type:
+                    case AudioType.MP3:
+                        audio["TPE2"] = TPE2(text=[valueStr])  # type: ignore[no-untyped-call]
+                    case AudioType.FLAC:
+                        audio["ALBUMARTIST"] = valueStr
 
             case "album":
-                if value != track.album:
-                    match audio_type:
-                        case AudioType.MP3:
-                            audio["TALB"] = TALB(text=[value])  # type: ignore[no-untyped-call]
-                        case AudioType.FLAC:
-                            audio["ALBUM"] = value
+                match audio_type:
+                    case AudioType.MP3:
+                        audio["TALB"] = TALB(text=[valueStr])  # type: ignore[no-untyped-call]
+                    case AudioType.FLAC:
+                        audio["ALBUM"] = valueStr
 
             case "album_position":
-                if value.isdigit() and value != track.album_position:
+                if value is None:
+                    popTag(
+                        audio,
+                        audio_type,
+                        {AudioType.MP3: "TRCK", AudioType.FLAC: "TRACKNUMBER"},
+                    )
+                    continue
+
+                if valueStr.isdigit():
                     match audio_type:
                         case AudioType.MP3:
-                            audio["TRCK"] = TRCK(text=[value])  # type: ignore[no-untyped-call]
+                            audio["TRCK"] = TRCK(text=[valueStr])  # type: ignore[no-untyped-call]
                         case AudioType.FLAC:
-                            audio["TRACKNUMBER"] = str(value)
+                            audio["TRACKNUMBER"] = valueStr
 
             case "year":
-                if value != track.year:
-                    match audio_type:
-                        case AudioType.MP3:
-                            audio["TDRC"] = TDRC(text=[value])  # type: ignore[no-untyped-call]
-                        case AudioType.FLAC:
-                            audio["DATE"] = str(value)
+                if value is None:
+                    popTag(
+                        audio,
+                        audio_type,
+                        {AudioType.MP3: "TDRC", AudioType.FLAC: "DATE"},
+                    )
+                    continue
+
+                match audio_type:
+                    case AudioType.MP3:
+                        audio["TDRC"] = TDRC(text=[valueStr])  # type: ignore[no-untyped-call]
+                    case AudioType.FLAC:
+                        audio["DATE"] = valueStr
 
             case "genres":
-                genres = value.split(", ")
-                if set(genres) != set(track.genres):
-                    match audio_type:
-                        case AudioType.MP3:
-                            audio["TCON"] = TCON(text=[value])  # type: ignore[no-untyped-call]
-                        case AudioType.FLAC:
-                            audio["GENRE"] = genres
+                if value == "":
+                    popTag(
+                        audio,
+                        audio_type,
+                        {AudioType.MP3: "TCON", AudioType.FLAC: "GENRE"},
+                    )
+                    continue
+
+                match audio_type:
+                    case AudioType.MP3:
+                        audio["TCON"] = TCON(text=[valueStr])  # type: ignore[no-untyped-call]
+                    case AudioType.FLAC:
+                        audio["GENRE"] = re.split(TAG_MULTIPLE_PATTERN, valueStr)
 
             case _:
-                found = False
-                should_update = False
                 for tag in track.custom_tags:
                     if tag.name == key:
-                        found = True
                         tag.updated = True
-                        if tag.value != value:
-                            should_update = True
-                            break
 
-                if not found or should_update:
-                    match audio_type:
-                        case AudioType.MP3:
-                            audio["TXXX:" + key] = TXXX(desc=key, text=value)  # type: ignore[no-untyped-call]
-                        case AudioType.FLAC:
-                            audio["TXXX:" + key] = value
+                match audio_type:
+                    case AudioType.MP3:
+                        audio["TXXX:" + key] = TXXX(desc=key, text=valueStr)  # type: ignore[no-untyped-call]
+                    case AudioType.FLAC:
+                        audio["TXXX:" + key] = valueStr
 
     for tag in track.custom_tags:
-        if tag.updated == False:
-            audio.pop("TXXX:" + tag.name)
+        key = "TXXX:" + tag.name
+        if tag.updated == False and key in (audio.tags or []):
+            audio.pop(key)
         tag.updated = False
 
-    audio.save()
     return audio, audio_type
-
-
-def create_default_user() -> None:
-    service_layer.create_user(next(db.get_session()), "admin", "admin")
 
 
 def clear_table(table: Any, session: Session) -> None:
@@ -212,7 +221,7 @@ def get_custom_tags_mp3(audio_file: MP3) -> list[tuple[str, str]]:
     custom_tags: list[tuple[str, str]] = []
     if audio_file.tags:
         for tag in audio_file.tags:
-            if tag.startswith("TXXX:"):
+            if str(tag).startswith("TXXX:"):
                 custom_tags.append((audio_file[tag].desc, audio_file[tag].text[0]))
     return custom_tags
 
@@ -221,7 +230,7 @@ def get_custom_tags_flac(audio_file: FLAC) -> list[tuple[str, str]]:
     custom_tags: list[tuple[str, str]] = []
     if audio_file.tags:
         for key, value in audio_file.tags:
-            if key.startswith("TXXX:"):
+            if str(key).startswith("TXXX:"):
                 custom_tags.append((key.split(":")[-1], value))
     return custom_tags
 

@@ -75,7 +75,8 @@ def update_tags(
     if track is None:
         return JSONResponse({"detail": "No such id"}, status_code=404)
 
-    audio, audio_type = utils.update_tags(track, data, session)
+    audio, audio_type = utils.update_tags(track, data)
+    audio.save()
 
     audio_info = db_loading.AudioInfo(track.file_path)
     match audio_type:
@@ -84,6 +85,6 @@ def update_tags(
         case utils.AudioType.FLAC:
             db_loading.extract_metadata_flac(FLAC(track.file_path), audio_info)
 
-    db_loading.load_audio_data(audio_info)
+    db_loading.load_audio_data(audio_info, session)
 
     return JSONResponse({"detail": "success"})

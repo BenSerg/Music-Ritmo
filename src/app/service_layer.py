@@ -693,3 +693,8 @@ def create_user(
     session.add(db.User(login=username, password=password, avatar=avatar_uid))
     session.commit()
     return (None, None)
+
+
+def create_default_user() -> None:
+    with Session(db.engine) as session:
+        create_user(session, "admin", "admin")
