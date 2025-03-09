@@ -257,12 +257,14 @@ class TestMusicFunctions(unittest.TestCase):
 
     def test_fill_playlist(self):
         mock_db_track = self.create_mock_track()
-        mock_playlist = self.create_mock_playlist(tracks=[mock_db_track])
+        mock_playlist = self.create_mock_playlist(tracks=[mock_db_track, mock_db_track])
         result = fill_playlist(
             mock_playlist, db.User(id=1, name="Test User"), with_songs=True
         )
+        print(result)
         self.assertEqual(result.name, "My Playlist")
         self.assertEqual(result.song_count, 2)
+        self.assertEqual(result.song_count, len(result.tracks))
 
     def test_fill_playlists(self):
         mock_db_track = self.create_mock_track()
