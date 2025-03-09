@@ -230,7 +230,7 @@ class TestMusicFunctions(unittest.TestCase):
     def test_fill_tracks(self):
         mock_db_tracks = [self.create_mock_track() for _ in range(2)]
         result = fill_tracks(mock_db_tracks, db.User(id=1, name="Test User"))
-        self.assertEqual(len(result), 2)  # Проверяем количество треков
+        self.assertEqual(len(result), 2)
 
     def test_fill_genre(self):
         mock_db_track = self.create_mock_track()
@@ -239,7 +239,7 @@ class TestMusicFunctions(unittest.TestCase):
         mock_genre.tracks = [mock_db_track, mock_db_track]
         result = fill_genre(mock_genre)
         self.assertEqual(result.name, "Rock")
-        self.assertEqual(result.albumCount, 1)  # Уникальные album_id
+        self.assertEqual(result.albumCount, 1)
         self.assertEqual(result.songCount, 2)
 
     def test_fill_genres(self):
@@ -253,7 +253,7 @@ class TestMusicFunctions(unittest.TestCase):
     def test_fill_artists(self):
         db_artists = [self.create_mock_artist()]
         result = fill_artists(db_artists, db.User(id=1, name="Test User"))
-        self.assertEqual(len(result), 1)  # Проверяем количество артистов
+        self.assertEqual(len(result), 1)
 
     def test_fill_playlist(self):
         mock_db_track = self.create_mock_track()

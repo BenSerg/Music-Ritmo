@@ -25,7 +25,7 @@ class TestGenreFunctions(unittest.TestCase):
         self.assertEqual(result.name, expected_genre.name)
 
     def test_fill_genres(self):
-        # Создаем список моков для db.Genre
+
         mock_db_genre1 = MagicMock(name="Pop")
         mock_db_genre1.tracks = [MagicMock(album_id=1), MagicMock(album_id=2)]
 
