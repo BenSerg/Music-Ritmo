@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import styles from "./track-list.module.css";
 
@@ -49,10 +49,11 @@ export const Tracklist = ({
   };
 
   return (
-    <div className={styles.playlist}>
+    <div className={styles.playlist} data-testid="tracklist">
       <div
         className={styles.playlist__avatar}
         style={{ backgroundColor: randomColor }}
+        data-testid="tracklist-avatar"
       ></div>
 
       <div className={styles.playlist__details}>
@@ -66,19 +67,27 @@ export const Tracklist = ({
           </Link>
         </div>
 
-        <div className={styles.playlist__favourite} onClick={onFavouriteToggle}>
-          {favourite ? (
-            <i className="fa-solid fa-star"></i>
+        <div
+          className={styles.playlist__favourite}
+          onClick={onFavouriteToggle}
+          data-testid="favourite-icon"
+        >
+          {favourite === "true" ? (
+            <i className="fa-solid fa-star" data-testid="filled-star"></i>
           ) : (
-            <i className="fa-regular fa-star"></i>
+            <i className="fa-regular fa-star" data-testid="empty-star"></i>
           )}
         </div>
 
         <div className={styles.playlist__time}>{formatTime(time)}</div>
 
         {showRemoveButton && onRemove && (
-          <div className={styles.playlist__remove} onClick={onRemove}>
-            <i className="fa-solid fa-xmark"></i>
+          <div
+            className={styles.playlist__remove}
+            onClick={onRemove}
+            data-testid="remove-button"
+          >
+            <i className="fa-solid fa-xmark" data-testid="favourite-button"></i>
           </div>
         )}
       </div>

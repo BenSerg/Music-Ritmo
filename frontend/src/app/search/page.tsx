@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { Container } from "@/shared/container";
 import { Tracklist } from "@/widgets/track-list";
 import { Playlist } from "@/entities/playlist";

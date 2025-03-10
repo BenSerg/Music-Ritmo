@@ -24,7 +24,7 @@ interface Artist {
   name: string;
 }
 
-interface SearchResult {
+export interface SearchResult {
   id: string;
   title: string;
   artist: string;
@@ -114,6 +114,7 @@ export const SearchPanel = () => {
 
       <i
         className={`fa-solid fa-magnifying-glass ${styles.search__icon}`}
+        data-testid="search-icon"
         onClick={handleSearch}
       />
 
@@ -155,6 +156,7 @@ export const SearchPanel = () => {
                 type="normal"
                 color="green"
                 disabled={false}
+                data-testid="button"
                 onClick={handleShowAllResults}
               >
                 Показать все результаты

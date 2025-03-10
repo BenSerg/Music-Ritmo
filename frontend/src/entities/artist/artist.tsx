@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import styles from "./artist.module.css";
 
 interface PlaylistProps {
@@ -30,6 +31,8 @@ export const Artist = ({ name, link, coverArt }: PlaylistProps) => {
         .catch((error) =>
           console.error("Ошибка при загрузке изображения:", error)
         );
+
+      console.log(coverArt);
     }
   }, [coverArt]);
   return (
@@ -39,9 +42,12 @@ export const Artist = ({ name, link, coverArt }: PlaylistProps) => {
       style={{ backgroundColor: randomColor }}
     >
       {image && (
-        <img
+        <Image
           src={image}
           alt={`${name} cover`}
+          role="img"
+          width={150}
+          height={150}
           className={styles.playlist__cover}
         />
       )}

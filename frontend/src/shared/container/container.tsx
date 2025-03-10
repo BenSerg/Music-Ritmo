@@ -24,7 +24,7 @@ export const Container: React.FC<ContainerProps> = ({
   const containerClassName = classNames(styles.container, styles[direction]);
 
   return (
-    <div className={containerClassName} style={style}>
+    <div className={containerClassName} style={style} data-testid="container">
       {arrow && <ArrowBack className={styles.arrow} link={link_arrow} />}
       {children}
     </div>

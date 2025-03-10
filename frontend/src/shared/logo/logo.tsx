@@ -15,8 +15,14 @@ export const Logo: React.FC<logoProps> = ({ type = "normal" }) => {
   const logoClassName = classNames(styles.logo, styles[type]);
 
   return (
-    <div className={logoClassName}>
-      <Image src={logo} className={styles.img} alt="logo" />
+    <div className={logoClassName} data-testid="logo">
+      <Image
+        src={logo}
+        className={styles.img}
+        alt="logo"
+        width={300}
+        height={300}
+      />
       <h1>musicRitmo</h1>
     </div>
   );

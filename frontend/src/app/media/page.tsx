@@ -2,7 +2,7 @@
 
 import { Container } from "@/shared/container";
 import { Button } from "@/shared/button";
-import { useState } from "react";
+import React, { useState } from "react";
 import styles from "./media.module.css";
 
 export default function Media() {
