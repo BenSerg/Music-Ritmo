@@ -464,7 +464,7 @@ async def start_scan(session: Session = Depends(db.get_session)) -> JSONResponse
     db_loading.scanStatus["scanning"] = True
     db_loading.scanStatus["count"] = 0
 
-    utils.clear_media(session)
+    utils.clear_tables(session)
     asyncio.get_running_loop().run_in_executor(None, db_loading.scan_and_load)
 
     rsp = SubsonicResponse()
@@ -615,7 +615,8 @@ def get_cover_art(
         ).one_or_none()
         if track is None:
             return JSONResponse({"detail": "No such track id"}, status_code=404)
-        image_bytes = utils.get_cover_art(track)
+        audio, _ = utils.get_audio_object(track)
+        image_bytes = utils.get_cover_from_audio(audio)
 
     elif prefix == "al":
         album = session.exec(
@@ -628,7 +629,8 @@ def get_cover_art(
         track = album_helpers.get_first_track(album.id)
         if track is None:
             return JSONResponse({"detail": "No such track id"}, status_code=404)
-        image_bytes = utils.get_cover_art(track)
+        audio, _ = utils.get_audio_object(track)
+        image_bytes = utils.get_cover_from_audio(audio)
 
     elif prefix == "ar":
         artist = session.exec(
@@ -642,7 +644,7 @@ def get_cover_art(
 
     image: Image.Image
     if image_bytes is None:
-        image = utils.get_default_cover()
+        image = Image.open(utils.DEFAULT_COVER_PATH)
         image_bytes = utils.image_to_bytes(image)
     else:
         image = utils.bytes_to_image(image_bytes)
