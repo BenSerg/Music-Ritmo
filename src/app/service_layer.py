@@ -74,7 +74,10 @@ def fill_albums(
     db_albums: Sequence[db.Album], db_user: db.User | None, with_songs: bool
 ) -> List[dto.Album]:
     return list(
-        map(partial(fill_album, db_user=db_user, with_songs=with_songs), db_albums)
+        sorted(
+            map(partial(fill_album, db_user=db_user, with_songs=with_songs), db_albums),
+            key=lambda album: album.id,
+        )
     )
 
 
@@ -86,7 +89,7 @@ def fill_artist_item(artist: db.Artist) -> dto.ArtistItem:
 
 
 def fill_artist_items(artists: Sequence[db.Artist]) -> List[dto.ArtistItem]:
-    return list(map(fill_artist_item, artists))
+    return list(sorted(map(fill_artist_item, artists), key=lambda artist: artist.id))
 
 
 def fill_genre_item(genre: db.Genre) -> dto.GenreItem:
@@ -96,7 +99,7 @@ def fill_genre_item(genre: db.Genre) -> dto.GenreItem:
 
 
 def fill_genre_items(genres: Sequence[db.Genre]) -> List[dto.GenreItem]:
-    return list(map(fill_genre_item, genres))
+    return list(sorted(map(fill_genre_item, genres), key=lambda genre: genre.name))
 
 
 def set_track_starred(db_track: db.Track, db_user: db.User | None) -> datetime | None:
@@ -142,7 +145,12 @@ def fill_track(db_track: db.Track, db_user: db.User | None) -> dto.Track:
 def fill_tracks(
     db_tracks: Sequence[db.Track], db_user: db.User | None
 ) -> List[dto.Track]:
-    return list(map(partial(fill_track, db_user=db_user), db_tracks))
+    return list(
+        sorted(
+            map(partial(fill_track, db_user=db_user), db_tracks),
+            key=lambda track: track.id,
+        )
+    )
 
 
 def fill_genre(db_genre: db.Genre) -> dto.Genre:
@@ -152,7 +160,7 @@ def fill_genre(db_genre: db.Genre) -> dto.Genre:
 
 
 def fill_genres(db_genres: Sequence[db.Genre]) -> List[dto.Genre]:
-    return list(map(fill_genre, db_genres))
+    return list(sorted(map(fill_genre, db_genres), key=lambda genre: genre.name))
 
 
 def fill_artists(
@@ -162,14 +170,17 @@ def fill_artists(
     with_songs: bool = False,
 ) -> List[dto.Artist]:
     return list(
-        map(
-            partial(
-                fill_artist,
-                db_user=db_user,
-                with_albums=with_albums,
-                with_songs=with_songs,
+        sorted(
+            map(
+                partial(
+                    fill_artist,
+                    db_user=db_user,
+                    with_albums=with_albums,
+                    with_songs=with_songs,
+                ),
+                db_artists,
             ),
-            db_artists,
+            key=lambda artist: artist.id,
         )
     )
 
@@ -203,8 +214,12 @@ def fill_playlists(
     with_songs: bool = False,
 ) -> List[dto.Playlist]:
     return list(
-        map(
-            partial(fill_playlist, db_user=db_user, with_songs=with_songs), db_playlists
+        sorted(
+            map(
+                partial(fill_playlist, db_user=db_user, with_songs=with_songs),
+                db_playlists,
+            ),
+            key=lambda playlist: playlist.id,
         )
     )
 
@@ -316,13 +331,13 @@ class AlbumService:
 def join_artist_names(artists: Sequence[db.Artist]) -> Optional[str]:
     if len(artists) == 0:
         return None
-    return ", ".join(a.name for a in artists)
+    return ", ".join(sorted(a.name for a in artists))
 
 
 def join_genre_names(genres: Sequence[db.Genre]) -> Optional[str]:
     if len(genres) == 0:
         return None
-    return ", ".join(g.name for g in genres)
+    return ", ".join(sorted(g.name for g in genres))
 
 
 def get_album_artist(db_track: db.Track) -> Optional[db.Artist]:

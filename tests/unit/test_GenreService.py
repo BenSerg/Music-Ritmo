@@ -26,10 +26,12 @@ class TestGenreFunctions(unittest.TestCase):
 
     def test_fill_genres(self):
 
-        mock_db_genre1 = MagicMock(name="Pop")
+        mock_db_genre1 = MagicMock()
+        mock_db_genre1.name = "Pop"
         mock_db_genre1.tracks = [MagicMock(album_id=1), MagicMock(album_id=2)]
 
-        mock_db_genre2 = MagicMock(name="Jazz")
+        mock_db_genre2 = MagicMock()
+        mock_db_genre2.name = "Jazz"
         mock_db_genre2.tracks = [
             MagicMock(album_id=1),
             MagicMock(album_id=1),
@@ -41,10 +43,10 @@ class TestGenreFunctions(unittest.TestCase):
         result = fill_genres(db_genres)
 
         self.assertEqual(len(result), 2)
-        self.assertEqual(result[0].albumCount, 2)
-        self.assertEqual(result[0].songCount, 2)
         self.assertEqual(result[1].albumCount, 2)
-        self.assertEqual(result[1].songCount, 3)
+        self.assertEqual(result[1].songCount, 2)
+        self.assertEqual(result[0].albumCount, 2)
+        self.assertEqual(result[0].songCount, 3)
 
     def test_fill_genre_empty_tracks(self):
         mock_db_genre = MagicMock()
@@ -72,10 +74,10 @@ class TestGenreFunctions(unittest.TestCase):
         result = fill_genres(db_genres)
 
         self.assertEqual(len(result), 2)
-        self.assertEqual(result[0].albumCount, 2)
-        self.assertEqual(result[0].songCount, 2)
-        self.assertEqual(result[1].albumCount, 0)
-        self.assertEqual(result[1].songCount, 0)
+        self.assertEqual(result[1].albumCount, 2)
+        self.assertEqual(result[1].songCount, 2)
+        self.assertEqual(result[0].albumCount, 0)
+        self.assertEqual(result[0].songCount, 0)
 
     def test_fill_genres_empty_list(self):
         db_genres = []
@@ -98,7 +100,6 @@ class TestGenreService(unittest.TestCase):
 
         genre_service = GenreService(mock_session)
         result = genre_service.get_genres()
-        print(result)
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].name, "Rock")
