@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .open_subsonic_api import open_subsonic_router
 from .db_loading import scan_and_load
 from .frontend_endpoints import frontend_router
+from .auth import auth_router
 from .database import init_db
 from .service_layer import create_default_user
 
@@ -22,11 +23,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-init_db()
-create_default_user()
-scan_and_load()
-
 app.include_router(open_subsonic_router)
-
 app.include_router(frontend_router)
+app.include_router(auth_router)
+
+if __name__ == "__main__":
+    init_db()
+    create_default_user()
+    scan_and_load()

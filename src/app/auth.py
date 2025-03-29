@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 
 from . import database as db
@@ -17,6 +17,10 @@ def decode_password(p: str) -> tuple[str | None, bool]:
     return password, False
 
 
+auth_router = APIRouter(prefix="")
+
+
+@auth_router.get("/authenticate_user")  # tmp
 def authenticate_user(
     u: str = Query(None),
     p: str = Query(None),
