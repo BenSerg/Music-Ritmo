@@ -110,7 +110,7 @@ def test_get_existing_song(db_uri: str):
 
 def test_get_nonexistent_song(db_uri: str):
     session_gen = partial(get_session_gen, db_uri=db_uri)
-    
+
     g = session_gen()
     session = next(g)
     create_user(session, "admin", "admin")
@@ -120,21 +120,21 @@ def test_get_nonexistent_song(db_uri: str):
     client = TestClient(app)
 
     response = client.get("/rest/getSong?id=2&u=admin&p=admin")
-    
-    assert response.status_code == 404 
-    
+
+    assert response.status_code == 404
+
     data = response.json()
     assert data["detail"] == "No such id"
 
 
 def test_get_album_with_songs(db_uri: str):
     session_gen = partial(get_session_gen, db_uri=db_uri)
-    
+
     g = session_gen()
     session = next(g)
-    
+
     create_user(session, "admin", "admin")
-    
+
     audio1 = get_default_audio_info("tracks/t1.mp3")
     audio1.title = "track1"
     audio1.album = "al1"
@@ -147,7 +147,6 @@ def test_get_album_with_songs(db_uri: str):
     load_audio_data(audio2, session)
 
     g.close()
-    
 
     app.dependency_overrides[db.get_session] = session_gen
     client = TestClient(app)
@@ -176,11 +175,11 @@ def test_get_album_with_songs(db_uri: str):
 
     songs = album["song"]
     assert len(songs) == 2
-    
+
     assert songs[0]["id"] == "1"
     assert songs[0]["title"] == "track1"
     assert songs[0]["track"] == 1
-    
+
     assert songs[1]["id"] == "2"
     assert songs[1]["title"] == "track2"
     assert songs[1]["track"] == 2
@@ -188,7 +187,7 @@ def test_get_album_with_songs(db_uri: str):
 
 def test_get_nonexistent_album(db_uri: str):
     session_gen = partial(get_session_gen, db_uri=db_uri)
-    
+
     g = session_gen()
     session = next(g)
     create_user(session, "admin", "admin")
@@ -198,9 +197,9 @@ def test_get_nonexistent_album(db_uri: str):
     client = TestClient(app)
 
     response = client.get("/rest/getAlbum?id=2&u=admin&p=admin")
-    
+
     assert response.status_code == 404
-    
+
     data = response.json()
     assert data["detail"] == "No such id"
 
@@ -209,9 +208,9 @@ def test_get_existing_artist(db_uri: str):
     session_gen = partial(get_session_gen, db_uri=db_uri)
     g = session_gen()
     session = next(g)
-    
+
     create_user(session, "admin", "admin")
-    
+
     audio_info = get_default_audio_info()
     audio_info.title = "track1"
     audio_info.artists = ["ar1"]
@@ -234,7 +233,7 @@ def test_get_existing_artist(db_uri: str):
     assert artist["coverArt"] == "ar-1"
     assert artist["albumCount"] == 1
     assert len(artist["album"]) == 1
-    
+
     album = artist["album"][0]
     assert album["id"] == "1"
     assert album["name"] == "al1"
@@ -244,7 +243,7 @@ def test_get_nonexistent_artist(db_uri: str):
     session_gen = partial(get_session_gen, db_uri=db_uri)
     g = session_gen()
     session = next(g)
-    
+
     create_user(session, "admin", "admin")
     g.close()
 
@@ -253,10 +252,55 @@ def test_get_nonexistent_artist(db_uri: str):
 
     response = client.get("/rest/getArtist?id=3&u=admin&p=admin")
     assert response.status_code == 404
-    
+
     data = response.json()
     data = response.json()
     assert data["detail"] == "No such id"
+
+
+def test_get_artists_with_alphabetical_index(db_uri: str):
+    session_gen = partial(get_session_gen, db_uri=db_uri)
+    g = session_gen()
+    session = next(g)
+
+    create_user(session, "admin", "admin")
+
+    audio1 = get_default_audio_info("tracks/t1.mp3")
+    audio1.title = "track1"
+    audio1.album = "al1"
+    audio1.artists = ["ar1"]
+    audio1.album_artist = None
+    load_audio_data(audio1, session)
+
+    audio2 = get_default_audio_info("tracks/t2.mp3")
+    audio2.title = "track2"
+    audio2.album = "al2"
+    audio2.artists = ["br2"]
+    audio2.album_artist = None
+    audio2.track_number = 2
+    load_audio_data(audio2, session)
+    g.close()
+
+    app.dependency_overrides[db.get_session] = session_gen
+    client = TestClient(app)
+
+    response = client.get("/rest/getArtists?u=admin&p=admin")
+    assert response.status_code == 200
+
+    data = response.json()
+    subsonic_response = data["subsonic-response"]
+    artists = subsonic_response["artists"]
+    assert artists["ignoredArticles"] == ""
+
+    assert len(artists["index"]) == 2
+    assert artists["index"][0]["name"] == "a"
+    assert artists["index"][1]["name"] == "b"
+
+    assert len(artists["index"][0]["artist"]) == 1
+    assert len(artists["index"][1]["artist"]) == 1
+
+    assert artists["index"][0]["artist"][0]["name"] == "ar1"
+    assert artists["index"][1]["artist"][0]["name"] == "br2"
 
 
 @pytest.mark.parametrize(
