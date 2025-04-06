@@ -307,38 +307,37 @@ def test_get_album_list_by_play_count(db_uri: str):
     session_gen = partial(get_session_gen, db_uri=db_uri)
     g = session_gen()
     session = next(g)
-    
+
     create_user(session, "admin", "admin")
-    
+
     albums_data = [
         {"id": 1, "name": "al1", "play_count": 0},
         {"id": 2, "name": "al2", "play_count": 5},
         {"id": 3, "name": "al3", "play_count": 2},
     ]
-    
+
     for album_data in albums_data:
         audio_info = get_default_audio_info(f"tracks/t{album_data['id']}.mp3")
         audio_info.title = f"track{album_data['id']}"
         audio_info.album = album_data["name"]
         load_audio_data(audio_info, session)
-        
+
         album = session.exec(
-            select(db.Album)
-            .where(db.Album.name == album_data["name"])
+            select(db.Album).where(db.Album.name == album_data["name"])
         ).one()
         album.play_count = album_data["play_count"]
         session.add(album)
-    
+
     session.commit()
 
     g.close()
-    
+
     app.dependency_overrides[db.get_session] = session_gen
     client = TestClient(app)
-    
+
     response = client.get("/rest/getAlbumList2?type=frequent&u=admin&p=admin")
     assert response.status_code == 200
-    
+
     data = response.json()
     album_list = data["subsonic-response"]["albumList2"]
     assert len(album_list["album"]) == 3
@@ -351,188 +350,192 @@ def test_get_album_list_alphabetical_by_name(db_uri: str):
     session_gen = partial(get_session_gen, db_uri=db_uri)
     g = session_gen()
     session = next(g)
-    
+
     create_user(session, "admin", "admin")
-    
+
     audio1 = get_default_audio_info("tracks/t1.mp3")
     audio1.title = "track1"
     audio1.album = "bl1"
     audio1.artists = ["ar1"]
     load_audio_data(audio1, session)
-    
+
     audio2 = get_default_audio_info("tracks/t2.mp3")
     audio2.title = "track2"
     audio2.album = "al2"
     audio2.artists = ["ar1"]
     load_audio_data(audio2, session)
-    
+
     audio3 = get_default_audio_info("tracks/t3.mp3")
     audio3.title = "track3"
     audio3.album = "al3"
     audio3.artists = ["ar1"]
     load_audio_data(audio3, session)
-    
+
     session.commit()
     g.close()
-    
+
     app.dependency_overrides[db.get_session] = session_gen
     client = TestClient(app)
-    
+
     response = client.get("/rest/getAlbumList2?type=alphabeticalByName&u=admin&p=admin")
     assert response.status_code == 200
-    
+
     data = response.json()
     album_list = data["subsonic-response"]["albumList2"]
-    
+
     assert len(album_list["album"]) == 3
     assert album_list["album"][0]["name"] == "al2"
     assert album_list["album"][1]["name"] == "al3"
     assert album_list["album"][2]["name"] == "bl1"
-    
+
 
 def test_get_album_list_alphabetical_by_artist(db_uri: str):
     session_gen = partial(get_session_gen, db_uri=db_uri)
     g = session_gen()
     session = next(g)
-    
+
     create_user(session, "admin", "admin")
-    
+
     audio1 = get_default_audio_info("tracks/t1.mp3")
     audio1.title = "track1"
     audio1.album = "al1"
     audio1.artists = ["arb"]
     audio1.album_artist = "arb"
     load_audio_data(audio1, session)
-    
+
     audio2 = get_default_audio_info("tracks/t2.mp3")
     audio2.title = "track2"
     audio2.album = "al2"
     audio2.artists = ["ara"]
     audio2.album_artist = "ara"
     load_audio_data(audio2, session)
-    
+
     audio3 = get_default_audio_info("tracks/t3.mp3")
     audio3.title = "track3"
     audio3.album = "al3"
     audio3.artists = ["zz"]
     audio3.album_artist = "zz"
     load_audio_data(audio3, session)
-    
+
     session.commit()
     g.close()
-    
+
     app.dependency_overrides[db.get_session] = session_gen
     client = TestClient(app)
-    
-    response = client.get("/rest/getAlbumList2?type=alphabeticalByArtist&u=admin&p=admin")
+
+    response = client.get(
+        "/rest/getAlbumList2?type=alphabeticalByArtist&u=admin&p=admin"
+    )
     assert response.status_code == 200
-    
+
     data = response.json()
     album_list = data["subsonic-response"]["albumList2"]
-    
+
     assert len(album_list["album"]) == 3
     assert album_list["album"][0]["name"] == "al2"  # ara
     assert album_list["album"][1]["name"] == "al1"  # arb
     assert album_list["album"][2]["name"] == "al3"  # zz
-    
+
 
 def test_get_album_list_by_year(db_uri: str):
     session_gen = partial(get_session_gen, db_uri=db_uri)
     g = session_gen()
     session = next(g)
-    
+
     create_user(session, "admin", "admin")
-    
+
     audio1 = get_default_audio_info("tracks/t1.mp3")
     audio1.title = "track1"
     audio1.album = "al1"
     audio1.year = 2011
     load_audio_data(audio1, session)
-    
+
     audio2 = get_default_audio_info("tracks/t2.mp3")
     audio2.title = "track2"
     audio2.album = "al2"
     audio2.year = 2005
     load_audio_data(audio2, session)
-    
+
     audio3 = get_default_audio_info("tracks/t3.mp3")
     audio3.title = "track3"
     audio3.album = "al3"
     audio3.year = 2003
     load_audio_data(audio3, session)
-    
+
     session.commit()
     g.close()
-    
+
     app.dependency_overrides[db.get_session] = session_gen
     client = TestClient(app)
-    
-    response = client.get("/rest/getAlbumList2?type=byYear&fromYear=2000&toYear=2010&u=admin&p=admin")
+
+    response = client.get(
+        "/rest/getAlbumList2?type=byYear&fromYear=2000&toYear=2010&u=admin&p=admin"
+    )
     assert response.status_code == 200
-    
+
     data = response.json()
     album_list = data["subsonic-response"]["albumList2"]
-    
+
     assert len(album_list["album"]) == 2
     assert album_list["album"][0]["name"] == "al3"  # 2003
     assert album_list["album"][1]["name"] == "al2"  # 2005
-    
+
 
 def test_get_album_list_by_genre(db_uri: str):
     session_gen = partial(get_session_gen, db_uri=db_uri)
     g = session_gen()
     session = next(g)
-    
+
     create_user(session, "admin", "admin")
-    
+
     audio1 = get_default_audio_info("tracks/t1.mp3")
     audio1.title = "track1"
     audio1.album = "al1"
     audio1.genres = ["Rock"]
     load_audio_data(audio1, session)
-    
+
     audio2 = get_default_audio_info("tracks/t2.mp3")
     audio2.title = "track2"
     audio2.album = "al2"
     audio2.genres = ["Rock"]
     load_audio_data(audio2, session)
-    
+
     audio3 = get_default_audio_info("tracks/t3.mp3")
     audio3.title = "track3"
     audio3.album = "al3"
     audio3.genres = ["Pop"]
     load_audio_data(audio3, session)
-    
+
     session.commit()
     g.close()
-    
+
     app.dependency_overrides[db.get_session] = session_gen
     client = TestClient(app)
-    
+
     response = client.get("/rest/getAlbumList2?type=byGenre&genre=Rock&u=admin&p=admin")
     assert response.status_code == 200
-    
+
     data = response.json()
     album_list = data["subsonic-response"]["albumList2"]
-    
+
     assert len(album_list["album"]) == 2
     assert {a["name"] for a in album_list["album"]} == {"al1", "al2"}
-    
+
 
 def test_get_album_list_missing_genre(db_uri: str):
     session_gen = partial(get_session_gen, db_uri=db_uri)
     g = session_gen()
     session = next(g)
-    
+
     create_user(session, "admin", "admin")
     g.close()
-    
+
     app.dependency_overrides[db.get_session] = session_gen
     client = TestClient(app)
-    
+
     response = client.get("/rest/getAlbumList2?type=byGenre&u=admin&p=admin")
     assert response.status_code == 400
-    
+
     data = response.json()
     assert data["detail"] == "Invalid arguments"
 
@@ -541,16 +544,16 @@ def test_get_album_list_missing_year(db_uri: str):
     session_gen = partial(get_session_gen, db_uri=db_uri)
     g = session_gen()
     session = next(g)
-    
+
     create_user(session, "admin", "admin")
     g.close()
-    
+
     app.dependency_overrides[db.get_session] = session_gen
     client = TestClient(app)
-    
+
     response = client.get("/rest/getAlbumList2?type=byYear&u=admin&p=admin")
     assert response.status_code == 400
-    
+
     data = response.json()
     assert data["detail"] == "Invalid arguments"
 
