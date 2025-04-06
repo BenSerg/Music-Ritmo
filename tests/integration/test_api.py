@@ -139,7 +139,6 @@ def test_get_album_with_songs(db_uri: str):
     audio1.title = "track1"
     audio1.album = "al1"
     load_audio_data(audio1, session)
-    session.commit()
 
     audio2 = get_default_audio_info("tracks/t2.mp3")
     audio2.title = "track2"
@@ -202,6 +201,60 @@ def test_get_nonexistent_album(db_uri: str):
     
     assert response.status_code == 404
     
+    data = response.json()
+    assert data["detail"] == "No such id"
+
+
+def test_get_existing_artist(db_uri: str):
+    session_gen = partial(get_session_gen, db_uri=db_uri)
+    g = session_gen()
+    session = next(g)
+    
+    create_user(session, "admin", "admin")
+    
+    audio_info = get_default_audio_info()
+    audio_info.title = "track1"
+    audio_info.artists = ["ar1"]
+    audio_info.album_artist = "ar1"
+    audio_info.album = "al1"
+    load_audio_data(audio_info, session)
+    g.close()
+
+    app.dependency_overrides[db.get_session] = session_gen
+    client = TestClient(app)
+
+    response = client.get("/rest/getArtist?id=1&u=admin&p=admin")
+    assert response.status_code == 200
+
+    data = response.json()
+    subsonic_response = data["subsonic-response"]
+    artist = subsonic_response["artist"]
+    assert artist["id"] == "1"
+    assert artist["name"] == "ar1"
+    assert artist["coverArt"] == "ar-1"
+    assert artist["albumCount"] == 1
+    assert len(artist["album"]) == 1
+    
+    album = artist["album"][0]
+    assert album["id"] == "1"
+    assert album["name"] == "al1"
+
+
+def test_get_nonexistent_artist(db_uri: str):
+    session_gen = partial(get_session_gen, db_uri=db_uri)
+    g = session_gen()
+    session = next(g)
+    
+    create_user(session, "admin", "admin")
+    g.close()
+
+    app.dependency_overrides[db.get_session] = session_gen
+    client = TestClient(app)
+
+    response = client.get("/rest/getArtist?id=3&u=admin&p=admin")
+    assert response.status_code == 404
+    
+    data = response.json()
     data = response.json()
     assert data["detail"] == "No such id"
 
