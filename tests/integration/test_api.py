@@ -48,7 +48,7 @@ def get_default_audio_info() -> AudioInfo:
     return audio_info
 
 
-def test_get_song(db_uri: str):
+def test_get_existing_song(db_uri: str):
     session_gen = partial(get_session_gen, db_uri=db_uri)
 
     audio_info = get_default_audio_info()
@@ -106,6 +106,25 @@ def test_get_song(db_uri: str):
     artist1 = artists[1]
     assert artist1["id"] == "2"
     assert artist1["name"] == "ar2"
+
+
+def test_get_nonexistent_song(db_uri: str):
+    session_gen = partial(get_session_gen, db_uri=db_uri)
+    
+    g = session_gen()
+    session = next(g)
+    create_user(session, "admin", "admin")
+    g.close()
+
+    app.dependency_overrides[db.get_session] = session_gen
+    client = TestClient(app)
+
+    response = client.get("/rest/getSong?id=2&u=admin&p=admin")
+    
+    assert response.status_code == 404 
+    
+    data = response.json()
+    assert data["detail"] == "No such id"
 
 
 @pytest.mark.parametrize(
