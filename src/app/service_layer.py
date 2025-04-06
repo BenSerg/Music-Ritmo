@@ -71,8 +71,18 @@ def fill_album(
 
 
 def fill_albums(
-    db_albums: Sequence[db.Album], db_user: db.User | None, with_songs: bool
+    db_albums: Sequence[db.Album],
+    db_user: db.User | None,
+    with_songs: bool,
+    need_sort: bool = True,
 ) -> List[dto.Album]:
+    if not need_sort:
+        return list(
+            map(
+                partial(fill_album, db_user=db_user, with_songs=with_songs),
+                db_albums,
+            ),
+        )
     return list(
         sorted(
             map(partial(fill_album, db_user=db_user, with_songs=with_songs), db_albums),
@@ -315,7 +325,7 @@ class AlbumService:
             case _:  # validation error
                 return None
 
-        return fill_albums(result, None, with_songs=False)
+        return fill_albums(result, None, with_songs=False, need_sort=False)
 
     def compare_albums_by_artist(self, album_id: int) -> str:
         artist: Optional[db.Artist] = self.album_db_helper.get_album_artist(album_id)
