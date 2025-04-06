@@ -23,11 +23,11 @@ def get_session_gen(db_uri: str):
         engine.dispose()
 
 
-def get_default_audio_info() -> AudioInfo:
+def get_default_audio_info(file_path="tracks/t1.mp3") -> AudioInfo:
     audio_info = None
     with patch("os.path.getsize") as mock_getsize:
         mock_getsize.return_value = 1984500
-        audio_info = AudioInfo("tracks/t1.mp3")
+        audio_info = AudioInfo(file_path)
     audio_info.type = "audio/mpeg"
     audio_info.title = "track1"
     audio_info.artists = ["ar1", "ar2"]
@@ -122,6 +122,85 @@ def test_get_nonexistent_song(db_uri: str):
     response = client.get("/rest/getSong?id=2&u=admin&p=admin")
     
     assert response.status_code == 404 
+    
+    data = response.json()
+    assert data["detail"] == "No such id"
+
+
+def test_get_album_with_songs(db_uri: str):
+    session_gen = partial(get_session_gen, db_uri=db_uri)
+    
+    g = session_gen()
+    session = next(g)
+    
+    create_user(session, "admin", "admin")
+    
+    audio1 = get_default_audio_info("tracks/t1.mp3")
+    audio1.title = "track1"
+    audio1.album = "al1"
+    load_audio_data(audio1, session)
+    session.commit()
+
+    audio2 = get_default_audio_info("tracks/t2.mp3")
+    audio2.title = "track2"
+    audio2.album = "al1"
+    audio2.track_number = 2
+    load_audio_data(audio2, session)
+
+    g.close()
+    
+
+    app.dependency_overrides[db.get_session] = session_gen
+    client = TestClient(app)
+
+    response = client.get("/rest/getAlbum?id=1&u=admin&p=admin")
+    assert response.status_code == 200
+
+    data = response.json()
+    subsonic_response = data["subsonic-response"]
+    album = subsonic_response["album"]
+    assert album["id"] == "1"
+    assert album["name"] == "al1"
+    assert album["artist"] == "ar1"
+    assert album["artistId"] == "1"
+    assert album["songCount"] == 2
+    assert album["duration"] == 120
+    assert album["playCount"] == 0
+    assert album["year"] == 2020
+    assert album["genre"] == "g1, g2"
+
+    genres = album["genres"]
+    assert genres == [{"name": "g1"}, {"name": "g2"}]
+
+    artists = album["artists"]
+    assert artists == [{"id": "1", "name": "ar1"}]
+
+    songs = album["song"]
+    assert len(songs) == 2
+    
+    assert songs[0]["id"] == "1"
+    assert songs[0]["title"] == "track1"
+    assert songs[0]["track"] == 1
+    
+    assert songs[1]["id"] == "2"
+    assert songs[1]["title"] == "track2"
+    assert songs[1]["track"] == 2
+
+
+def test_get_nonexistent_album(db_uri: str):
+    session_gen = partial(get_session_gen, db_uri=db_uri)
+    
+    g = session_gen()
+    session = next(g)
+    create_user(session, "admin", "admin")
+    g.close()
+
+    app.dependency_overrides[db.get_session] = session_gen
+    client = TestClient(app)
+
+    response = client.get("/rest/getAlbum?id=2&u=admin&p=admin")
+    
+    assert response.status_code == 404
     
     data = response.json()
     assert data["detail"] == "No such id"
