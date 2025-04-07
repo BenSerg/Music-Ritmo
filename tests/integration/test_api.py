@@ -714,6 +714,67 @@ def test_get_songs_by_genre(db_uri: str):
     assert "track2" in song_titles
 
 
+def test_star(db_uri: str):
+    session_gen = partial(get_session_gen, db_uri=db_uri)
+    g = session_gen()
+    session = next(g)
+
+    create_user(session, "admin", "admin")
+
+    audio1 = get_default_audio_info("tracks/t1.mp3")
+    audio1.title = "track1"
+    load_audio_data(audio1, session)
+
+    audio2 = get_default_audio_info("tracks/t2.mp3")
+    audio2.title = "track2"
+    load_audio_data(audio2, session)
+
+    session.commit()
+
+    app.dependency_overrides[db.get_session] = session_gen
+    client = TestClient(app)
+
+    response = client.get("/rest/star?id=1&id=2&u=admin&p=admin")
+    assert response.status_code == 200
+
+    fav_tracks = session.exec(select(db.FavouriteTrack)).all()
+    assert fav_tracks is not None
+    assert len(fav_tracks) == 2
+    user_tracks = [(f.user_id, f.track_id) for f in fav_tracks]
+    assert (1, 1) in user_tracks
+    assert (1, 2) in user_tracks
+
+    g.close()
+
+
+def test_unstar_track(db_uri: str):
+    session_gen = partial(get_session_gen, db_uri=db_uri)
+    g = session_gen()
+    session = next(g)
+
+    create_user(session, "admin", "admin")
+    audio_info = get_default_audio_info()
+    load_audio_data(audio_info, session)
+
+    fav_track = db.FavouriteTrack(user_id=1, track_id=1, added_at="")
+    session.add(fav_track)
+    session.commit()
+
+    app.dependency_overrides[db.get_session] = session_gen
+    client = TestClient(app)
+
+    response = client.get("/rest/unstar?id=1&u=admin&p=admin")
+    assert response.status_code == 200
+
+    fav_track = session.exec(
+        select(db.FavouriteTrack)
+        .where(db.FavouriteTrack.user_id == 1)
+        .where(db.FavouriteTrack.track_id == 1)
+    ).first()
+    assert fav_track is None
+    g.close()
+
+
 @pytest.mark.parametrize(
     "id, status_code",
     [
@@ -1030,118 +1091,6 @@ def test_get_tracks_by_genre(mock_getsize: MagicMock, session: Session):
 
     assert len(tracks) == 2
     assert len(genres) == 2
-
-
-@patch("os.path.getsize")
-def test_star(mock_getsize: MagicMock, session: Session):
-    mock_getsize.return_value = 1
-
-    session.add(db.User(login="test_user", password="password", avatar="line"))
-    session.commit()
-
-    audio_info = AudioInfo("tracks/t1.mp3")
-    audio_info.type = "audio/mpeg"
-    audio_info.title = "track1"
-    audio_info.artists = ["ar1", "ar2"]
-    audio_info.album_artist = "ar1"
-    audio_info.album = "al1"
-    audio_info.genres = ["g1", "g2"]
-    audio_info.track_number = 1
-    audio_info.year = 2020
-    audio_info.cover = bytes()
-    audio_info.cover_type = ""
-    audio_info.custom_tags = []
-    audio_info.bit_rate = 1
-    audio_info.bits_per_sample = 1
-    audio_info.sample_rate = 1
-    audio_info.channels = 1
-    audio_info.duration = 1
-
-    load_audio_data(audio_info, session)
-
-    audio_info = AudioInfo("tracks/t2.mp3")
-    audio_info.type = "audio/mpeg"
-    audio_info.title = "track2"
-    audio_info.artists = ["ar1", "ar2"]
-    audio_info.album_artist = "ar1"
-    audio_info.album = "al2"
-    audio_info.genres = ["g1", "g2"]
-    audio_info.track_number = 2
-    audio_info.year = 2021
-    audio_info.cover = bytes()
-    audio_info.cover_type = ""
-    audio_info.custom_tags = []
-    audio_info.bit_rate = 1
-    audio_info.bits_per_sample = 1
-    audio_info.sample_rate = 1
-    audio_info.channels = 1
-    audio_info.duration = 1
-
-    load_audio_data(audio_info, session)
-
-    tracks = session.exec(select(db.Track)).all()
-    albums = session.exec(select(db.Album)).all()
-    artists = session.exec(select(db.Artist)).all()
-
-    assert len(tracks) == 2
-    assert len(albums) == 2
-    assert len(artists) == 2
-
-
-@patch("os.path.getsize")
-def test_unstar(mock_getsize: MagicMock, session: Session):
-    mock_getsize.return_value = 1
-
-    session.add(db.User(login="test_user", password="password", avatar="line"))
-    session.commit()
-
-    audio_info = AudioInfo("tracks/t1.mp3")
-    audio_info.type = "audio/mpeg"
-    audio_info.title = "track1"
-    audio_info.artists = ["ar1", "ar2"]
-    audio_info.album_artist = "ar1"
-    audio_info.album = "al1"
-    audio_info.genres = ["g1", "g2"]
-    audio_info.track_number = 1
-    audio_info.year = 2020
-    audio_info.cover = bytes()
-    audio_info.cover_type = ""
-    audio_info.custom_tags = []
-    audio_info.bit_rate = 1
-    audio_info.bits_per_sample = 1
-    audio_info.sample_rate = 1
-    audio_info.channels = 1
-    audio_info.duration = 1
-
-    load_audio_data(audio_info, session)
-
-    audio_info = AudioInfo("tracks/t2.mp3")
-    audio_info.type = "audio/mpeg"
-    audio_info.title = "track2"
-    audio_info.artists = ["ar1", "ar2"]
-    audio_info.album_artist = "ar1"
-    audio_info.album = "al2"
-    audio_info.genres = ["g1", "g2"]
-    audio_info.track_number = 2
-    audio_info.year = 2021
-    audio_info.cover = bytes()
-    audio_info.cover_type = ""
-    audio_info.custom_tags = []
-    audio_info.bit_rate = 1
-    audio_info.bits_per_sample = 1
-    audio_info.sample_rate = 1
-    audio_info.channels = 1
-    audio_info.duration = 1
-
-    load_audio_data(audio_info, session)
-
-    tracks = session.exec(select(db.Track)).all()
-    albums = session.exec(select(db.Album)).all()
-    artists = session.exec(select(db.Artist)).all()
-
-    assert len(tracks) == 2
-    assert len(albums) == 2
-    assert len(artists) == 2
 
 
 @patch("os.path.getsize")
