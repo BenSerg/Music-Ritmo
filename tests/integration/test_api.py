@@ -665,6 +665,55 @@ def test_get_genres(db_uri: str):
     ]
 
 
+def test_get_songs_by_genre(db_uri: str):
+    session_gen = partial(get_session_gen, db_uri=db_uri)
+    g = session_gen()
+    session = next(g)
+
+    create_user(session, "admin", "admin")
+
+    audio1 = get_default_audio_info("tracks/t1.mp3")
+    audio1.title = "track1"
+    audio1.album = "al1"
+    audio1.artists = ["arb"]
+    audio1.album_artist = "arb"
+    audio1.genres = ["g1", "g2"]
+    load_audio_data(audio1, session)
+
+    audio2 = get_default_audio_info("tracks/t2.mp3")
+    audio2.title = "track2"
+    audio2.album = "al2"
+    audio2.artists = ["ara"]
+    audio2.album_artist = "ara"
+    audio2.genres = ["g1", "g3"]
+    load_audio_data(audio2, session)
+
+    audio3 = get_default_audio_info("tracks/t3.mp3")
+    audio3.title = "track3"
+    audio3.album = "al3"
+    audio3.artists = ["zz"]
+    audio3.album_artist = "zz"
+    audio3.genres = ["g2", "g3"]
+    load_audio_data(audio3, session)
+
+    session.commit()
+    g.close()
+
+    app.dependency_overrides[db.get_session] = session_gen
+    client = TestClient(app)
+
+    response = client.get("/rest/getSongsByGenre?genre=g1&u=admin&p=admin")
+    assert response.status_code == 200
+
+    data = response.json()
+    songs = data["subsonic-response"]["songsByGenre"]["song"]
+    assert len(songs) == 2
+
+    song_titles = {s["title"] for s in songs}
+    assert "track1" in song_titles
+    assert "track2" in song_titles
+
+
 @pytest.mark.parametrize(
     "id, status_code",
     [
