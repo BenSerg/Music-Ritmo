@@ -613,6 +613,58 @@ def test_search3(db_uri: str):
     assert "track32" in song_titles
 
 
+def test_get_genres(db_uri: str):
+    session_gen = partial(get_session_gen, db_uri=db_uri)
+    g = session_gen()
+    session = next(g)
+
+    create_user(session, "admin", "admin")
+
+    audio1 = get_default_audio_info("tracks/t1.mp3")
+    audio1.title = "track1"
+    audio1.album = "al1"
+    audio1.artists = ["arb"]
+    audio1.album_artist = "arb"
+    audio1.genres = ["g1", "g2"]
+    load_audio_data(audio1, session)
+
+    audio2 = get_default_audio_info("tracks/t2.mp3")
+    audio2.title = "track2"
+    audio2.album = "al2"
+    audio2.artists = ["ara"]
+    audio2.album_artist = "ara"
+    audio2.genres = ["g1", "g3"]
+    load_audio_data(audio2, session)
+
+    audio3 = get_default_audio_info("tracks/t3.mp3")
+    audio3.title = "track3"
+    audio3.album = "al3"
+    audio3.artists = ["zz"]
+    audio3.album_artist = "zz"
+    audio3.genres = ["g2", "g3"]
+    load_audio_data(audio3, session)
+
+    session.commit()
+    g.close()
+
+    app.dependency_overrides[db.get_session] = session_gen
+    client = TestClient(app)
+
+    response = client.get("/rest/getGenres?u=admin&p=admin")
+    assert response.status_code == 200
+
+    data = response.json()
+    genres = data["subsonic-response"]["genres"]["genre"]
+
+    assert len(genres) >= 3
+
+    assert genres == [
+        {"songCount": 2, "albumCount": 2, "value": "g1"},
+        {"songCount": 2, "albumCount": 2, "value": "g2"},
+        {"songCount": 2, "albumCount": 2, "value": "g3"},
+    ]
+
+
 @pytest.mark.parametrize(
     "id, status_code",
     [
@@ -878,55 +930,6 @@ def test_search(mock_getsize: MagicMock, session: Session):
     assert len(tracks) == 2
     assert len(albums) == 2
     assert len(artists) == 2
-
-
-@patch("os.path.getsize")
-def test_get_genres(mock_getsize: MagicMock, session: Session):
-    mock_getsize.return_value = 1
-
-    audio_info = AudioInfo("tracks/t1.mp3")
-    audio_info.type = "audio/mpeg"
-    audio_info.title = "track1"
-    audio_info.artists = ["ar1", "ar2"]
-    audio_info.album_artist = "ar1"
-    audio_info.album = "al1"
-    audio_info.genres = ["g1", "g2"]
-    audio_info.track_number = 1
-    audio_info.year = 2020
-    audio_info.cover = bytes()
-    audio_info.cover_type = ""
-    audio_info.custom_tags = []
-    audio_info.bit_rate = 1
-    audio_info.bits_per_sample = 1
-    audio_info.sample_rate = 1
-    audio_info.channels = 1
-    audio_info.duration = 1
-
-    load_audio_data(audio_info, session)
-
-    audio_info = AudioInfo("tracks/t2.mp3")
-    audio_info.type = "audio/mpeg"
-    audio_info.title = "track2"
-    audio_info.artists = ["ar1", "ar2"]
-    audio_info.album_artist = "ar1"
-    audio_info.album = "al2"
-    audio_info.genres = ["g1", "g2"]
-    audio_info.track_number = 2
-    audio_info.year = 2021
-    audio_info.cover = bytes()
-    audio_info.cover_type = ""
-    audio_info.custom_tags = []
-    audio_info.bit_rate = 1
-    audio_info.bits_per_sample = 1
-    audio_info.sample_rate = 1
-    audio_info.channels = 1
-    audio_info.duration = 1
-
-    load_audio_data(audio_info, session)
-
-    genres = session.exec(select(db.Genre)).all()
-
-    assert len(genres) == 2
 
 
 @patch("os.path.getsize")
