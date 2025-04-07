@@ -558,6 +558,61 @@ def test_get_album_list_missing_year(db_uri: str):
     assert data["detail"] == "Invalid arguments"
 
 
+def test_search3(db_uri: str):
+    session_gen = partial(get_session_gen, db_uri=db_uri)
+    g = session_gen()
+    session = next(g)
+
+    create_user(session, "admin", "admin")
+
+    audio1 = get_default_audio_info("tracks/t1.mp3")
+    audio1.title = "track1"
+    audio1.album = "al1"
+    audio1.artists = ["ar1"]
+    audio1.album_artist = "ar1"
+    load_audio_data(audio1, session)
+
+    audio2 = get_default_audio_info("tracks/t2.mp3")
+    audio2.title = "song2"
+    audio2.album = "al2"
+    audio2.artists = ["singer2"]
+    audio2.album_artist = "singer2"
+    load_audio_data(audio2, session)
+
+    audio3 = get_default_audio_info("tracks/t3.mp3")
+    audio3.title = "track32"
+    audio3.album = "list3"
+    audio3.artists = ["singer3"]
+    audio3.album_artist = "singer3"
+    load_audio_data(audio3, session)
+
+    session.commit()
+    g.close()
+
+    app.dependency_overrides[db.get_session] = session_gen
+    client = TestClient(app)
+
+    response = client.get("/rest/search3?query=a&u=admin&p=admin")
+    assert response.status_code == 200
+
+    data = response.json()
+    search_result = data["subsonic-response"]["searchResult3"]
+
+    assert len(search_result["artist"]) == 1  # ar1
+    assert len(search_result["album"]) == 2  # al1, al2
+    assert len(search_result["song"]) == 2  # track1, track32
+
+    assert search_result["artist"][0]["name"] == "ar1"
+
+    album_names = {a["name"] for a in search_result["album"]}
+    assert "al1" in album_names
+    assert "al2" in album_names
+
+    song_titles = {s["title"] for s in search_result["song"]}
+    assert "track1" in song_titles
+    assert "track32" in song_titles
+
+
 @pytest.mark.parametrize(
     "id, status_code",
     [
