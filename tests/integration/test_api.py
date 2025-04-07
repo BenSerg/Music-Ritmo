@@ -748,6 +748,34 @@ def test_star(db_uri: str):
     g.close()
 
 
+def test_unstar_track(db_uri: str):
+    session_gen = partial(get_session_gen, db_uri=db_uri)
+    g = session_gen()
+    session = next(g)
+
+    create_user(session, "admin", "admin")
+    audio_info = get_default_audio_info()
+    load_audio_data(audio_info, session)
+
+    fav_track = db.FavouriteTrack(user_id=1, track_id=1, added_at="")
+    session.add(fav_track)
+    session.commit()
+
+    app.dependency_overrides[db.get_session] = session_gen
+    client = TestClient(app)
+
+    response = client.get("/rest/unstar?id=1&u=admin&p=admin")
+    assert response.status_code == 200
+
+    fav_track = session.exec(
+        select(db.FavouriteTrack)
+        .where(db.FavouriteTrack.user_id == 1)
+        .where(db.FavouriteTrack.track_id == 1)
+    ).first()
+    assert fav_track is None
+    g.close()
+
+
 def test_get_starred2(db_uri: str):
     session_gen = partial(get_session_gen, db_uri=db_uri)
     g = session_gen()
