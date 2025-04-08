@@ -183,6 +183,8 @@ class OpenSubsonicFormatter:
         result = {
             "id": str(artist.id),
             "name": artist.name,
+            "coverArt": f"ar-{str(artist.id)}",
+            "albumCount": len(artist.albums),
         }
 
         add_if_not_none(result, "artistImageUrl", artist.artist_image_url)
