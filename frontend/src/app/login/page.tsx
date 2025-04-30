@@ -133,7 +133,12 @@ export default function Login() {
             <Button
               type="normal"
               color="green"
-              disabled={!username || !password}
+              disabled={
+                !username ||
+                !password ||
+                Boolean(errorMessage) ||
+                Boolean(passwordError)
+              }
               onClick={handleSubmit}
             >
               Войти
@@ -143,6 +148,7 @@ export default function Login() {
         <Button
           type="transparent"
           color="green-text"
+          testid="go-to-registration"
           onClick={() => router.push("/registration")}
         >
           регистрация

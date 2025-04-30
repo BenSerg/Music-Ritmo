@@ -35,7 +35,8 @@
     "test/genres.test.tsx",
     "test/search-panel.test.ts",
     "test/genres.test.tsx",
-    "jest.setup.js"
+    "jest.setup.js",
+    "test/ui-test/*.test.js"
   ],
   "exclude": ["node_modules"]
 }

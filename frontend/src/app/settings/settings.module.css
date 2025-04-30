@@ -18,3 +18,9 @@
   width: 50%;
   margin: 130px auto;
 }
+
+.errorMessage {
+  color: #405a01;
+  font-family: "SteticaLight";
+  font-size: 14px;
+}
