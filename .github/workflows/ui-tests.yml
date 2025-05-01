@@ -23,27 +23,27 @@ jobs:
         with:
           node-version: "18"
 
-      - name: Install dependencies
+      - name: Install frontend dependencies
         run: npm ci
         working-directory: frontend
 
-      - name: Reset Database (initial)
-        run: npm run reset-db
+      - name: Build frontend
+        run: npm run build
         working-directory: frontend
 
-      - name: Start server
-        run: npm run start &
+      - name: Start frontend
+        run: npm start &
+        working-directory: frontend
         env:
           NODE_ENV: test
-        working-directory: frontend
 
-      - name: Wait for server
+      - name: Wait for frontend
         run: npx wait-on http://localhost:3000
         working-directory: frontend
 
       - name: Run system tests
         run: xvfb-run --auto-servernum npm run test:ui
+        working-directory: frontend
         env:
           PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
           CI: true
-        working-directory: frontend
