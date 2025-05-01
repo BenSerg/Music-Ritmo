@@ -18,9 +18,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Change directory to frontend
-        run: cd frontend
-
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -28,19 +25,25 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        working-directory: frontend
 
       - name: Reset Database (initial)
         run: npm run reset-db
+        working-directory: frontend
 
       - name: Start server
         run: npm run start &
         env:
           NODE_ENV: test
+        working-directory: frontend
+
       - name: Wait for server
         run: npx wait-on http://localhost:3000
+        working-directory: frontend
 
       - name: Run system tests
         run: xvfb-run --auto-servernum npm run test:ui
         env:
           PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
           CI: true
+        working-directory: frontend
