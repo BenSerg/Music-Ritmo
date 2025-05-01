@@ -1,0 +1,43 @@
+name: Run System Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mongo:
+        image: mongo:5
+        ports: [27017:27017]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Reset Database (initial)
+        run: npm run reset-db
+
+      - name: Start server
+        run: npm run start &
+        env:
+          NODE_ENV: test
+      - name: Wait for server
+        run: npx wait-on http://localhost:3000
+
+      - name: Run system tests
+        run: xvfb-run --auto-servernum npm run test:ui
+        env:
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
+          CI: true
