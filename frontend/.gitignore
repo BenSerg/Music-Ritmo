@@ -10,6 +10,9 @@
 !test/
 !test/**/*
 
+!scripts/
+!scripts/**/*
+
 !assets/
 !assets/**/*
 
