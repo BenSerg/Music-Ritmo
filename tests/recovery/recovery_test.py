@@ -3,12 +3,18 @@ import time
 import subprocess
 import os
 
+
 def get_process_id_using_port(port):
     try:
-        pid = subprocess.check_output(f"lsof -t -i:{port}", shell=True).decode('utf-8').strip()
+        pid = (
+            subprocess.check_output(f"lsof -t -i:{port}", shell=True)
+            .decode("utf-8")
+            .strip()
+        )
         return pid
     except subprocess.CalledProcessError:
         return None
+
 
 def stop_server(port):
     pid = get_process_id_using_port(port)
@@ -24,20 +30,33 @@ def stop_server(port):
         print("Сервер не найден")
         return 0
 
+
 def start_server():
     print("Запускаем сервер...")
     start = time.time()
-    subprocess.Popen(["uvicorn", "src.app.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"])
+    subprocess.Popen(
+        [
+            "uvicorn",
+            "src.app.main:app",
+            "--reload",
+            "--host",
+            "0.0.0.0",
+            "--port",
+            "8000",
+        ]
+    )
     time.sleep(10)
     duration = time.time() - start
     print(f"Сервер запущен за {duration:.2f} сек")
     return duration
+
 
 def measure_api_response_time(url):
     start = time.time()
     response = requests.get(url)
     duration = time.time() - start
     return response, duration
+
 
 def test_recovery():
     session = requests.Session()
@@ -71,5 +90,6 @@ def test_recovery():
     print(f"Время ответа API при создании: {create_time:.2f} сек")
     print(f"Время ответа API после восстановления: {get_time:.2f} сек\n")
     print("Тест восстановления прошёл успешно")
+
 
 test_recovery()
