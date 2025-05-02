@@ -131,7 +131,7 @@ export const SearchPanel = () => {
               {result.type === "song" && (
                 <>
                   <div className={styles.search__resultSong}>
-                    {result.title}
+                    Трек {result.title}
                   </div>
                   <div className={styles.search__resultSongArtist}>
                     {result.artist}

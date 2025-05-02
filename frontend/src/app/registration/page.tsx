@@ -121,7 +121,7 @@ export default function Registration() {
 
           <Input
             type="text"
-            placeholder="введите логин"
+            placeholder="придумайте логин"
             value={user}
             onChange={(e) => {
               setUsername(e.target.value);
@@ -136,7 +136,7 @@ export default function Registration() {
 
           <Input
             type="password"
-            placeholder="введите пароль"
+            placeholder="придумайте пароль"
             value={password}
             onChange={(e) => {
               setPassword(e.target.value);

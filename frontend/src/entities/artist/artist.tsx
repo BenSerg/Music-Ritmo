@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import styles from "./artist.module.css";
+import Link from "next/link";
 
-interface PlaylistProps {
+interface ArtistProps {
   name: string;
   link: string;
   coverArt?: string;
 }
 
-export const Artist = ({ name, link, coverArt }: PlaylistProps) => {
+export const Artist = ({ name, link, coverArt }: ArtistProps) => {
   const colorOptions = ["#949E7B", "#B3BF7D", "#758934", "#A1BA65", "#405A01"];
   const [randomColor, setRandomColor] = useState<string>("");
   const [image, setImage] = useState<string | null>(null);
@@ -34,11 +35,7 @@ export const Artist = ({ name, link, coverArt }: PlaylistProps) => {
     }
   }, [coverArt]);
   return (
-    <a
-      href={link}
-      className={styles.playlist}
-      style={{ backgroundColor: randomColor }}
-    >
+    <div className={styles.artist} style={{ backgroundColor: randomColor }}>
       {image && (
         <Image
           src={image}
@@ -46,10 +43,12 @@ export const Artist = ({ name, link, coverArt }: PlaylistProps) => {
           role="img"
           width={150}
           height={150}
-          className={styles.playlist__cover}
+          className={styles.artist__cover}
         />
       )}
-      <div className={styles.playlist__name}>{name}</div>
-    </a>
+      <Link href={link} role="link" data-testid="playlist-link">
+        <div className={styles.artist__name}>{name}</div>
+      </Link>
+    </div>
   );
 };

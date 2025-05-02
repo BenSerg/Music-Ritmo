@@ -13,6 +13,7 @@ interface ButtonProps {
   color?: ButtonColor;
   onClick?: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void;
   disabled?: boolean;
+  testid?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -22,6 +23,7 @@ export const Button: React.FC<ButtonProps> = ({
   color = "green",
   onClick,
   disabled,
+  testid,
 }) => {
   const [isDisabled, setIsDisabled] = useState<boolean>(false);
 
@@ -46,6 +48,7 @@ export const Button: React.FC<ButtonProps> = ({
       className={buttonClassName}
       disabled={disabled || isDisabled}
       onClick={handleClick}
+      data-testid={testid}
     >
       {children}
     </button>

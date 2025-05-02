@@ -245,3 +245,10 @@
   max-height: 100%;
   padding: 10px;
 }
+
+.successMessage {
+  font-family: "SteticaLight";
+  font-weight: 400;
+  font-size: 20px;
+  color: #405a01;
+}

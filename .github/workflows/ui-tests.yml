@@ -1,0 +1,49 @@
+name: Run System Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mongo:
+        image: mongo:5
+        ports: [27017:27017]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
+
+      - name: Start frontend
+        run: npm start &
+        working-directory: frontend
+        env:
+          NODE_ENV: test
+
+      - name: Wait for frontend
+        run: npx wait-on http://localhost:3000
+        working-directory: frontend
+
+      - name: Run system tests
+        run: xvfb-run --auto-servernum npm run test:ui
+        working-directory: frontend
+        env:
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
+          CI: true
